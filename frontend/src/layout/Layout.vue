@@ -47,7 +47,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { OfficeBuilding, User, UserFilled, DataAnalysis, Briefcase, Document, ChatDotRound, Calendar, Tickets } from '@element-plus/icons-vue'
+import { OfficeBuilding, User, UserFilled, DataAnalysis, PieChart, Briefcase, Document, ChatDotRound, Calendar, Tickets, Monitor } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 
 const route = useRoute()
@@ -55,7 +55,8 @@ const route = useRoute()
 const activeMenu = computed(() => route.path)
 
 const menuItems = [
-  { path: '/stats', title: '统计概览', icon: DataAnalysis },
+  { path: '/dashboard', title: '工作台', icon: Monitor },
+  { path: '/stats', title: '统计看板', icon: PieChart },
   { path: '/jobs', title: '职位管理', icon: Briefcase },
   { path: '/candidates', title: '候选人管理', icon: UserFilled },
   { path: '/applications', title: '申请管理', icon: Document },

@@ -59,6 +59,7 @@
     <el-card class="list-card" shadow="never">
       <div class="card-header">
         <h3 class="card-title">面试安排 <span class="count-tip">共 {{ interviewList.length }} 条</span></h3>
+        <el-button type="primary" :icon="Plus" @click="openCreateDialog">新增面试</el-button>
       </div>
       <el-empty v-if="!loading && interviewList.length === 0" description="暂无面试安排" />
       <el-table v-else :data="interviewList" v-loading="loading" stripe style="width: 100%">
@@ -172,6 +173,60 @@
         <el-button type="primary" :loading="submitting" @click="confirmComplete">确认完成</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="createVisible" title="安排面试" width="520px" destroy-on-close>
+      <el-form :model="createForm" label-width="100px" :rules="createRules" ref="createFormRef">
+        <el-form-item label="选择申请" prop="applicationId">
+          <el-select v-model="createForm.applicationId" placeholder="请选择投递申请" filterable style="width: 100%">
+            <el-option
+              v-for="app in allApplications"
+              :key="app.id"
+              :label="`${app.resume?.candidateName} - ${app.jobTitle}（${getAppStatusText(app.status)}）`"
+              :value="app.id"
+              :disabled="app.status === 'rejected' || app.status === 'hired'"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="面试轮次" prop="round">
+          <el-input-number v-model="createForm.round" :min="1" :max="10" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="面试时间" prop="interviewTime">
+          <el-date-picker
+            v-model="createForm.interviewTime"
+            type="datetime"
+            placeholder="请选择面试时间"
+            style="width: 100%"
+            format="YYYY-MM-DD HH:mm"
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
+          />
+        </el-form-item>
+        <el-form-item label="面试方式" prop="method">
+          <el-radio-group v-model="createForm.method">
+            <el-radio value="onsite">现场</el-radio>
+            <el-radio value="online">视频</el-radio>
+            <el-radio value="phone">电话</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="面试官" prop="interviewer">
+          <el-input v-model="createForm.interviewer" placeholder="请输入面试官姓名" />
+        </el-form-item>
+        <el-form-item label="地点/链接">
+          <el-input v-model="createForm.location" placeholder="现场地址或会议链接" />
+        </el-form-item>
+        <el-form-item label="面试说明">
+          <el-input
+            v-model="createForm.description"
+            type="textarea"
+            :rows="2"
+            placeholder="可填写面试内容要点、注意事项等"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="confirmCreate">确认安排</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -179,15 +234,16 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, RefreshLeft } from '@element-plus/icons-vue'
+import { Refresh, RefreshLeft, Plus } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
-import { listInterviews, listJobs, rescheduleInterview, cancelInterview, completeInterview } from '@/api'
+import { listInterviews, listJobs, listApplications, rescheduleInterview, cancelInterview, completeInterview, createInterview } from '@/api'
 import InterviewDetailContent from './InterviewDetailContent.vue'
 
 const router = useRouter()
 const loading = ref(false)
 const submitting = ref(false)
 const allJobs = ref([])
+const allApplications = ref([])
 const interviewList = ref([])
 
 const filters = reactive({
@@ -257,6 +313,20 @@ const loadJobs = async () => {
   } catch (e) {
     console.error('加载职位列表失败:', e)
   }
+}
+
+const loadApplications = async () => {
+  try {
+    const res = await listApplications()
+    allApplications.value = res?.data || []
+  } catch (e) {
+    console.error('加载申请列表失败:', e)
+  }
+}
+
+const getAppStatusText = (s) => {
+  const map = { submitted: '已投递', pending: '待沟通', interview: '面试中', rejected: '已拒绝', hired: '已录用' }
+  return map[s] || s
 }
 
 const loadInterviews = async () => {
@@ -344,8 +414,56 @@ const confirmComplete = async () => {
   }
 }
 
+const createVisible = ref(false)
+const createFormRef = ref(null)
+const createForm = reactive({
+  applicationId: '',
+  round: 1,
+  interviewTime: '',
+  method: 'onsite',
+  interviewer: '招聘专员-刘经理',
+  location: '',
+  description: ''
+})
+const createRules = {
+  applicationId: [{ required: true, message: '请选择投递申请', trigger: 'change' }],
+  round: [{ required: true, message: '请选择面试轮次', trigger: 'change' }],
+  interviewTime: [{ required: true, message: '请选择面试时间', trigger: 'change' }],
+  method: [{ required: true, message: '请选择面试方式', trigger: 'change' }],
+  interviewer: [{ required: true, message: '请输入面试官', trigger: 'blur' }]
+}
+const openCreateDialog = () => {
+  createForm.applicationId = ''
+  createForm.round = 1
+  createForm.interviewTime = ''
+  createForm.method = 'onsite'
+  createForm.interviewer = '招聘专员-刘经理'
+  createForm.location = ''
+  createForm.description = ''
+  if (allApplications.value.length === 0) {
+    loadApplications()
+  }
+  createVisible.value = true
+}
+const confirmCreate = async () => {
+  await createFormRef.value?.validate()
+  if (!createForm.applicationId || !createForm.interviewTime || !createForm.interviewer) return
+  submitting.value = true
+  try {
+    await createInterview({ ...createForm })
+    ElMessage.success('面试已安排，候选人申请状态已同步')
+    createVisible.value = false
+    loadInterviews()
+  } catch (e) {
+    ElMessage.error('安排失败：' + (e?.response?.data?.error || e.message))
+  } finally {
+    submitting.value = false
+  }
+}
+
 onMounted(() => {
   loadJobs()
+  loadApplications()
   loadInterviews()
 })
 </script>

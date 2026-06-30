@@ -5,13 +5,19 @@ const routes = [
   {
     path: '/',
     component: Layout,
-    redirect: '/stats',
+    redirect: '/dashboard',
     children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/Dashboard.vue'),
+        meta: { title: '工作台', icon: 'DataAnalysis' }
+      },
       {
         path: 'stats',
         name: 'Stats',
         component: () => import('@/views/Stats.vue'),
-        meta: { title: '统计概览', icon: 'DataAnalysis' }
+        meta: { title: '统计看板', icon: 'PieChart' }
       },
       {
         path: 'jobs',
@@ -56,6 +62,11 @@ const routes = [
         meta: { title: 'Offer 管理', icon: 'Tickets' }
       }
     ]
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('@/views/NotFound.vue')
   }
 ]
 

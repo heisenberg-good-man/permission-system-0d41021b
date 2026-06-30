@@ -66,8 +66,8 @@
     <OfferDialog
       v-model="offerVisible"
       :applications="offerApplications"
-      :candidate-name="interview.candidateName"
-      :pre-select-application-id="interview.applicationId"
+      :candidate-name="offerCandidateName"
+      :pre-select-application-id="offerPreSelectId"
       @success="handleOfferSuccess"
     />
 
@@ -254,19 +254,28 @@ const confirmComplete = async () => {
 
 const offerVisible = ref(false)
 const offerApplications = ref([])
+const offerPreSelectId = ref('')
+const offerCandidateName = ref('')
 const loadOfferApplications = async () => {
   if (!props.interview.applicationId) return
   try {
     const res = await getApplication(props.interview.applicationId)
     if (res?.data) {
       offerApplications.value = [res.data]
+      offerPreSelectId.value = res.data.id
+      offerCandidateName.value = res.data.resume?.candidateName || props.interview.candidateName
     }
   } catch (e) {
     console.error('加载申请失败:', e)
   }
 }
-const openOfferDialog = () => {
-  loadOfferApplications()
+const openOfferDialog = async () => {
+  offerCandidateName.value = props.interview.candidateName
+  offerPreSelectId.value = props.interview.applicationId || ''
+  offerApplications.value = []
+  if (props.interview.applicationId) {
+    await loadOfferApplications()
+  }
   offerVisible.value = true
 }
 const handleOfferSuccess = () => {
