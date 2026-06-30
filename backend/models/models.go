@@ -25,6 +25,13 @@ const (
 	RoleCandidate SenderRole = "candidate"
 )
 
+type NoteType string
+
+const (
+	NoteTypeInterview NoteType = "interview"
+	NoteTypeScreen    NoteType = "screen"
+)
+
 type Job struct {
 	ID           string    `json:"id"`
 	Title        string    `json:"title"`
@@ -49,29 +56,69 @@ type Resume struct {
 }
 
 type Application struct {
-	ID              string            `json:"id"`
-	JobID           string            `json:"jobId"`
-	JobTitle        string            `json:"jobTitle"`
-	Status          ApplicationStatus `json:"status"`
-	SubmittedAt     string            `json:"submittedAt"`
-	Resume          Resume            `json:"resume"`
-	LastMessageTime *string           `json:"lastMessageTime,omitempty"`
-	UnreadCount     int               `json:"unreadCount"`
+	ID              string             `json:"id"`
+	JobID           string             `json:"jobId"`
+	JobTitle        string             `json:"jobTitle"`
+	Status          ApplicationStatus  `json:"status"`
+	SubmittedAt     string             `json:"submittedAt"`
+	Resume          Resume             `json:"resume"`
+	LastMessageTime *string            `json:"lastMessageTime,omitempty"`
+	UnreadCount     int                `json:"unreadCount"`
 }
 
 type Message struct {
-	ID         string     `json:"id"`
-	ApplicationID string  `json:"applicationId"`
-	SenderName string     `json:"senderName"`
-	SenderRole SenderRole `json:"senderRole"`
-	Content    string     `json:"content"`
-	SentAt     string     `json:"sentAt"`
+	ID            string     `json:"id"`
+	ApplicationID string     `json:"applicationId"`
+	SenderName    string     `json:"senderName"`
+	SenderRole    SenderRole `json:"senderRole"`
+	Content       string     `json:"content"`
+	SentAt        string     `json:"sentAt"`
+}
+
+type Note struct {
+	ID        string   `json:"id"`
+	Candidate string   `json:"candidate"`
+	Contact   string   `json:"contact"`
+	Type      NoteType `json:"type"`
+	Content   string   `json:"content"`
+	CreatedBy string   `json:"createdBy"`
+	CreatedAt string   `json:"createdAt"`
 }
 
 type Stats struct {
-	TotalJobs          int            `json:"totalJobs"`
-	OpenJobs           int            `json:"openJobs"`
-	TotalApplications  int            `json:"totalApplications"`
+	TotalJobs           int            `json:"totalJobs"`
+	OpenJobs            int            `json:"openJobs"`
+	TotalApplications   int            `json:"totalApplications"`
+	TotalCandidates     int            `json:"totalCandidates"`
+	NewThisWeek         int            `json:"newThisWeek"`
 	ApplicationsByStatus map[string]int `json:"applicationsByStatus"`
-	NewThisWeek        int            `json:"newThisWeek"`
+}
+
+type ApplicationSimple struct {
+	ID          string            `json:"id"`
+	JobID       string            `json:"jobId"`
+	JobTitle    string            `json:"jobTitle"`
+	Status      ApplicationStatus `json:"status"`
+	SubmittedAt string            `json:"submittedAt"`
+}
+
+type Candidate struct {
+	CandidateName   string              `json:"candidateName"`
+	Contact         string              `json:"contact"`
+	TargetPosition  string              `json:"targetPosition"`
+	YearsOfExp      int                 `json:"yearsOfExp"`
+	Skills          []string            `json:"skills"`
+	Summary         string              `json:"summary"`
+	Applications    []ApplicationSimple `json:"applications"`
+	LatestStatus    ApplicationStatus   `json:"latestStatus"`
+	LatestJobTitle  string              `json:"latestJobTitle"`
+	LastMessageTime *string             `json:"lastMessageTime,omitempty"`
+	AppliedAt       string              `json:"appliedAt"`
+	NoteCount       int                 `json:"noteCount"`
+}
+
+type CandidateDetail struct {
+	Candidate Candidate `json:"candidate"`
+	Messages  []Message `json:"messages"`
+	Notes     []Note    `json:"notes"`
 }

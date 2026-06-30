@@ -43,3 +43,23 @@ export const sendMessage = (data) => {
 export const getStats = () => {
   return request.get('/stats')
 }
+
+export const listCandidates = (params) => {
+  return request.get('/candidates', { params })
+}
+
+export const getCandidate = (params) => {
+  return request.get('/candidates/detail', { params })
+}
+
+export const updateCandidateStatus = (data) => {
+  return request.put('/candidates/status', data)
+}
+
+export const listNotes = (params) => {
+  return request.get('/notes', { params })
+}
+
+export const createNote = (data) => {
+  return request.post('/notes', data)
+}

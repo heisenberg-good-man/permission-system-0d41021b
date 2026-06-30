@@ -56,6 +56,19 @@ func main() {
 		{
 			stats.GET("", handlers.GetStats)
 		}
+
+		candidates := api.Group("/candidates")
+		{
+			candidates.GET("", handlers.ListCandidates)
+			candidates.GET("/detail", handlers.GetCandidate)
+			candidates.PUT("/status", handlers.UpdateCandidateStatus)
+		}
+
+		notes := api.Group("/notes")
+		{
+			notes.GET("", handlers.ListNotes)
+			notes.POST("", handlers.CreateNote)
+		}
 	}
 
 	log.Println("Server starting on :8080")

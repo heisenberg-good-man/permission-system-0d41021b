@@ -1,6 +1,8 @@
 package store
 
 import (
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +15,7 @@ var (
 	jobs         []models.Job
 	applications []models.Application
 	messages     []models.Message
+	notes        []models.Note
 	mu           sync.RWMutex
 )
 
@@ -209,6 +212,36 @@ func InitMockData() {
 			SentAt:        msgTime3,
 		},
 	}
+
+	notes = []models.Note{
+		{
+			ID:        uuid.New().String(),
+			Candidate: "张三",
+			Contact:   "13800138001",
+			Type:      models.NoteTypeInterview,
+			Content:   "技术一面评价：基础扎实，对 Go 并发模型理解深刻，项目经验丰富。建议进行二面。",
+			CreatedBy: "招聘专员-刘经理",
+			CreatedAt: now.AddDate(0, 0, -2).Format(time.RFC3339),
+		},
+		{
+			ID:        uuid.New().String(),
+			Candidate: "张三",
+			Contact:   "13800138001",
+			Type:      models.NoteTypeScreen,
+			Content:   "初筛意见：学历背景好，大厂工作经历，期望薪资在预算范围内，可推进。",
+			CreatedBy: "招聘专员-刘经理",
+			CreatedAt: now.AddDate(0, 0, -4).Format(time.RFC3339),
+		},
+		{
+			ID:        uuid.New().String(),
+			Candidate: "李四",
+			Contact:   "13800138002",
+			Type:      models.NoteTypeScreen,
+			Content:   "简历亮点：主导过中后台系统重构，性能优化提升40%。建议邀请面试。",
+			CreatedBy: "招聘专员-刘经理",
+			CreatedAt: now.AddDate(0, 0, -1).Format(time.RFC3339),
+		},
+	}
 }
 
 func ListJobs(keyword, location, status string) []models.Job {
@@ -243,8 +276,10 @@ func containsIgnoreCase(s, substr string) bool {
 }
 
 func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
+	lowS := strings.ToLower(s)
+	lowSub := strings.ToLower(substr)
+	for i := 0; i <= len(lowS)-len(lowSub); i++ {
+		if lowS[i:i+len(lowSub)] == lowSub {
 			return true
 		}
 	}
@@ -387,6 +422,212 @@ func SendMessage(msg *models.Message) models.Message {
 	return *msg
 }
 
+func buildCandidate(apps []models.Application, noteCount int) models.Candidate {
+	latest := apps[0]
+	appSimples := make([]models.ApplicationSimple, 0, len(apps))
+	for _, app := range apps {
+		appSimples = append(appSimples, models.ApplicationSimple{
+			ID:          app.ID,
+			JobID:       app.JobID,
+			JobTitle:    app.JobTitle,
+			Status:      app.Status,
+			SubmittedAt: app.SubmittedAt,
+		})
+	}
+
+	return models.Candidate{
+		CandidateName:   latest.Resume.CandidateName,
+		Contact:         latest.Resume.Contact,
+		TargetPosition:  latest.Resume.TargetPosition,
+		YearsOfExp:      latest.Resume.YearsOfExp,
+		Skills:          latest.Resume.Skills,
+		Summary:         latest.Resume.Summary,
+		Applications:    appSimples,
+		LatestStatus:    latest.Status,
+		LatestJobTitle:  latest.JobTitle,
+		LastMessageTime: latest.LastMessageTime,
+		AppliedAt:       latest.SubmittedAt,
+		NoteCount:       noteCount,
+	}
+}
+
+func candidateMatchesFilter(c models.Candidate, keyword, jobId, status string) bool {
+	if keyword != "" {
+		kw := strings.ToLower(keyword)
+		if !strings.Contains(strings.ToLower(c.CandidateName), kw) &&
+			!strings.Contains(strings.ToLower(c.Contact), kw) &&
+			!strings.Contains(strings.ToLower(c.TargetPosition), kw) &&
+			!strings.Contains(strings.ToLower(c.Summary), kw) {
+			skillMatch := false
+			for _, s := range c.Skills {
+				if strings.Contains(strings.ToLower(s), kw) {
+					skillMatch = true
+					break
+				}
+			}
+			if !skillMatch {
+				return false
+			}
+		}
+	}
+	if jobId != "" {
+		jobMatch := false
+		for _, a := range c.Applications {
+			if a.JobID == jobId {
+				jobMatch = true
+				break
+			}
+		}
+		if !jobMatch {
+			return false
+		}
+	}
+	if status != "" && string(c.LatestStatus) != status {
+		return false
+	}
+	return true
+}
+
+func ListCandidates(keyword, jobId, status string) []models.Candidate {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	grouped := make(map[string][]models.Application)
+	for _, app := range applications {
+		key := app.Resume.Contact + "|" + app.Resume.CandidateName
+		grouped[key] = append(grouped[key], app)
+	}
+
+	noteCountMap := make(map[string]int)
+	for _, note := range notes {
+		key := note.Contact + "|" + note.Candidate
+		noteCountMap[key]++
+	}
+
+	result := make([]models.Candidate, 0)
+	for key, apps := range grouped {
+		sort.Slice(apps, func(i, j int) bool {
+			return apps[i].SubmittedAt > apps[j].SubmittedAt
+		})
+
+		noteCount := noteCountMap[key]
+		candidate := buildCandidate(apps, noteCount)
+		if candidateMatchesFilter(candidate, keyword, jobId, status) {
+			result = append(result, candidate)
+		}
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].AppliedAt > result[j].AppliedAt
+	})
+
+	return result
+}
+
+func GetCandidate(contact, name string) *models.CandidateDetail {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	var candidateApps []models.Application
+	for _, app := range applications {
+		if app.Resume.Contact == contact && app.Resume.CandidateName == name {
+			candidateApps = append(candidateApps, app)
+		}
+	}
+	if len(candidateApps) == 0 {
+		return nil
+	}
+
+	sort.Slice(candidateApps, func(i, j int) bool {
+		return candidateApps[i].SubmittedAt > candidateApps[j].SubmittedAt
+	})
+
+	var candidateNotes []models.Note
+	for _, note := range notes {
+		if note.Contact == contact && note.Candidate == name {
+			candidateNotes = append(candidateNotes, note)
+		}
+	}
+	sort.Slice(candidateNotes, func(i, j int) bool {
+		return candidateNotes[i].CreatedAt > candidateNotes[j].CreatedAt
+	})
+
+	appIds := make(map[string]bool)
+	for _, app := range candidateApps {
+		appIds[app.ID] = true
+	}
+
+	var candidateMessages []models.Message
+	for _, msg := range messages {
+		if appIds[msg.ApplicationID] {
+			candidateMessages = append(candidateMessages, msg)
+		}
+	}
+	sort.Slice(candidateMessages, func(i, j int) bool {
+		return candidateMessages[i].SentAt < candidateMessages[j].SentAt
+	})
+
+	noteCount := len(candidateNotes)
+	base := buildCandidate(candidateApps, noteCount)
+
+	return &models.CandidateDetail{
+		Candidate: base,
+		Messages:  candidateMessages,
+		Notes:     candidateNotes,
+	}
+}
+
+func UpdateCandidateStatus(contact, name string, status models.ApplicationStatus) error {
+	mu.Lock()
+	defer mu.Unlock()
+
+	updated := false
+	for i := range applications {
+		if applications[i].Resume.Contact == contact && applications[i].Resume.CandidateName == name {
+			applications[i].Status = status
+			updated = true
+		}
+	}
+	if !updated {
+		return nil
+	}
+	return nil
+}
+
+func ListNotes(contact, name string) []models.Note {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	result := make([]models.Note, 0)
+	for _, note := range notes {
+		if contact != "" && note.Contact != contact {
+			continue
+		}
+		if name != "" && note.Candidate != name {
+			continue
+		}
+		result = append(result, note)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].CreatedAt > result[j].CreatedAt
+	})
+	return result
+}
+
+func CreateNote(note *models.Note) models.Note {
+	mu.Lock()
+	defer mu.Unlock()
+
+	note.ID = uuid.New().String()
+	note.CreatedAt = time.Now().Format(time.RFC3339)
+	if note.CreatedBy == "" {
+		note.CreatedBy = "招聘专员-刘经理"
+	}
+	notes = append(notes, *note)
+	return *note
+}
+
 func GetStats() models.Stats {
 	mu.RLock()
 	defer mu.RUnlock()
@@ -396,6 +637,7 @@ func GetStats() models.Stats {
 	}
 
 	weekAgo := time.Now().AddDate(0, 0, -7)
+	candidateSet := make(map[string]bool)
 
 	for _, job := range jobs {
 		stats.TotalJobs++
@@ -407,12 +649,16 @@ func GetStats() models.Stats {
 	for _, app := range applications {
 		stats.TotalApplications++
 		stats.ApplicationsByStatus[string(app.Status)]++
+		key := app.Resume.Contact + "|" + app.Resume.CandidateName
+		candidateSet[key] = true
 
 		submittedTime, err := time.Parse(time.RFC3339, app.SubmittedAt)
 		if err == nil && submittedTime.After(weekAgo) {
 			stats.NewThisWeek++
 		}
 	}
+
+	stats.TotalCandidates = len(candidateSet)
 
 	return stats
 }

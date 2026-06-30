@@ -213,3 +213,108 @@ func GetStats(c *gin.Context) {
 	stats := store.GetStats()
 	c.JSON(http.StatusOK, gin.H{"data": stats})
 }
+
+func ListCandidates(c *gin.Context) {
+	keyword := c.Query("keyword")
+	jobId := c.Query("jobId")
+	status := c.Query("status")
+
+	candidates := store.ListCandidates(keyword, jobId, status)
+	c.JSON(http.StatusOK, gin.H{"data": candidates})
+}
+
+func GetCandidate(c *gin.Context) {
+	contact := c.Query("contact")
+	name := c.Query("name")
+
+	if contact == "" || name == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "联系方式和姓名不能为空"})
+		return
+	}
+
+	candidate := store.GetCandidate(contact, name)
+	if candidate == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "候选人不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": candidate})
+}
+
+type updateCandidateStatusRequest struct {
+	Contact string                     `json:"contact" binding:"required"`
+	Name    string                     `json:"name" binding:"required"`
+	Status  models.ApplicationStatus `json:"status" binding:"required"`
+}
+
+func UpdateCandidateStatus(c *gin.Context) {
+	var req updateCandidateStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validStatuses := map[models.ApplicationStatus]bool{
+		models.AppStatusPending:   true,
+		models.AppStatusInterview: true,
+		models.AppStatusRejected:  true,
+		models.AppStatusHired:     true,
+	}
+
+	if !validStatuses[req.Status] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的候选人状态"})
+		return
+	}
+
+	err := store.UpdateCandidateStatus(req.Contact, req.Name, req.Status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "状态更新成功"})
+}
+
+func ListNotes(c *gin.Context) {
+	contact := c.Query("contact")
+	name := c.Query("name")
+
+	notes := store.ListNotes(contact, name)
+	c.JSON(http.StatusOK, gin.H{"data": notes})
+}
+
+type createNoteRequest struct {
+	Candidate string           `json:"candidate" binding:"required"`
+	Contact   string           `json:"contact" binding:"required"`
+	Type      models.NoteType `json:"type" binding:"required"`
+	Content   string           `json:"content" binding:"required"`
+	CreatedBy string           `json:"createdBy"`
+}
+
+func CreateNote(c *gin.Context) {
+	var req createNoteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	validTypes := map[models.NoteType]bool{
+		models.NoteTypeInterview: true,
+		models.NoteTypeScreen:    true,
+	}
+
+	if !validTypes[req.Type] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的备注类型"})
+		return
+	}
+
+	note := &models.Note{
+		Candidate: req.Candidate,
+		Contact:   req.Contact,
+		Type:      req.Type,
+		Content:   req.Content,
+		CreatedBy: req.CreatedBy,
+	}
+
+	created := store.CreateNote(note)
+	c.JSON(http.StatusCreated, gin.H{"data": created})
+}

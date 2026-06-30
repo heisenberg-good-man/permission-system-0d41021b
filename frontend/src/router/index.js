@@ -30,6 +30,18 @@ const routes = [
         name: 'Messages',
         component: () => import('@/views/Messages.vue'),
         meta: { title: '沟通中心', icon: 'ChatDotRound' }
+      },
+      {
+        path: 'candidates',
+        name: 'Candidates',
+        component: () => import('@/views/Candidates.vue'),
+        meta: { title: '候选人管理', icon: 'UserFilled' }
+      },
+      {
+        path: 'candidates/detail',
+        name: 'CandidateDetail',
+        component: () => import('@/views/CandidateDetail.vue'),
+        meta: { title: '候选人详情', icon: 'UserFilled', hidden: true }
       }
     ]
   }
