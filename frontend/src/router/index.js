@@ -42,6 +42,12 @@ const routes = [
         name: 'CandidateDetail',
         component: () => import('@/views/CandidateDetail.vue'),
         meta: { title: '候选人详情', icon: 'UserFilled', hidden: true }
+      },
+      {
+        path: 'interviews',
+        name: 'Interviews',
+        component: () => import('@/views/Interviews.vue'),
+        meta: { title: '面试安排', icon: 'Calendar' }
       }
     ]
   }

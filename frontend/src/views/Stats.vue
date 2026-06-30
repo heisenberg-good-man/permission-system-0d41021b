@@ -1,11 +1,11 @@
 <template>
   <div class="stats-page">
     <el-row :gutter="16">
-      <el-col :span="6" v-for="card in statCards" :key="card.key">
-        <el-card class="stat-card" shadow="never" :body-style="{ padding: '20px' }">
+      <el-col :span="4" v-for="card in statCards" :key="card.key">
+        <el-card class="stat-card" shadow="never" :body-style="{ padding: '16px' }">
           <div class="stat-card-inner">
             <div class="stat-icon" :style="{ background: card.bg }">
-              <el-icon :size="26"><component :is="card.icon" /></el-icon>
+              <el-icon :size="22"><component :is="card.icon" /></el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-label">{{ card.label }}</div>
@@ -96,7 +96,7 @@ import { ref, reactive, onMounted, nextTick, markRaw } from 'vue'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
 import {
-  DataAnalysis, Briefcase, User, TrendCharts, Bell
+  DataAnalysis, Briefcase, User, TrendCharts, Bell, UserFilled, Calendar
 } from '@element-plus/icons-vue'
 import { getStats, listApplications, listJobs } from '@/api'
 
@@ -110,6 +110,9 @@ const statData = reactive({
   totalJobs: 0,
   openJobs: 0,
   totalApplications: 0,
+  totalCandidates: 0,
+  totalInterviews: 0,
+  pendingInterviews: 0,
   newThisWeek: 0
 })
 
@@ -131,19 +134,35 @@ const statCards = [
     sub: (d) => `占比 ${d.totalJobs ? Math.round(d.openJobs / d.totalJobs * 100) : 0}%`
   },
   {
+    key: 'totalCandidates',
+    label: '候选人总数',
+    icon: markRaw(UserFilled),
+    color: '#e6a23c',
+    bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    sub: (d) => `累计申请 ${d.totalApplications} 份`
+  },
+  {
+    key: 'pendingInterviews',
+    label: '待面试',
+    icon: markRaw(Calendar),
+    color: '#f56c6c',
+    bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    sub: (d) => `累计面试 ${d.totalInterviews} 场`
+  },
+  {
     key: 'totalApplications',
     label: '累计申请',
     icon: markRaw(User),
-    color: '#e6a23c',
-    bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    sub: (d) => `本周新增 ${d.newThisWeek} 份`
+    color: '#409eff',
+    bg: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)',
+    sub: () => '含全状态'
   },
   {
     key: 'newThisWeek',
     label: '本周新增',
     icon: markRaw(TrendCharts),
-    color: '#f56c6c',
-    bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    color: '#67c23a',
+    bg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
     sub: () => '最近 7 天'
   }
 ]
@@ -253,6 +272,9 @@ const loadAll = async () => {
     statData.totalJobs = stats.totalJobs || 0
     statData.openJobs = stats.openJobs || 0
     statData.totalApplications = stats.totalApplications || 0
+    statData.totalCandidates = stats.totalCandidates || 0
+    statData.totalInterviews = stats.totalInterviews || 0
+    statData.pendingInterviews = stats.pendingInterviews || 0
     statData.newThisWeek = stats.newThisWeek || 0
 
     const apps = appsRes.data || []

@@ -69,6 +69,17 @@ func main() {
 			notes.GET("", handlers.ListNotes)
 			notes.POST("", handlers.CreateNote)
 		}
+
+		interviews := api.Group("/interviews")
+		{
+			interviews.GET("", handlers.ListInterviews)
+			interviews.GET("/:id", handlers.GetInterview)
+			interviews.POST("", handlers.CreateInterview)
+			interviews.PUT("/:id/reschedule", handlers.RescheduleInterview)
+			interviews.PUT("/:id/cancel", handlers.CancelInterview)
+			interviews.PUT("/:id/complete", handlers.CompleteInterview)
+			interviews.PUT("/:id/note", handlers.AddInterviewNote)
+		}
 	}
 
 	log.Println("Server starting on :8080")

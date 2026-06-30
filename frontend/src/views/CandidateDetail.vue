@@ -78,6 +78,9 @@
               <el-button type="success" @click="goToMessage" :icon="ChatDotRound">
                 发起沟通
               </el-button>
+              <el-button type="warning" @click="openInterviewDialog" :icon="Calendar">
+                安排面试
+              </el-button>
             </div>
           </div>
         </el-card>
@@ -108,6 +111,9 @@
                   </el-button>
                   <el-button link type="success" size="small" @click="goToMessageById(app.id)">
                     去沟通
+                  </el-button>
+                  <el-button link type="warning" size="small" @click="openInterviewDialog(app)" :disabled="app.status === 'rejected' || app.status === 'hired'">
+                    安排面试
                   </el-button>
                 </div>
               </el-card>
@@ -199,6 +205,61 @@
         </el-card>
       </el-col>
     </el-row>
+    <el-dialog v-model="interviewVisible" title="安排面试" width="520px" destroy-on-close>
+      <el-form :model="interviewForm" label-width="100px" :rules="interviewRules" ref="interviewFormRef">
+        <el-form-item label="选择申请" prop="applicationId">
+          <el-select v-model="interviewForm.applicationId" placeholder="请选择投递申请" filterable style="width: 100%">
+            <el-option
+              v-for="app in candidate?.applications || []"
+              :key="app.id"
+              :label="`${app.jobTitle}（${getStatusText(app.status)}）`"
+              :value="app.id"
+              :disabled="app.status === 'rejected' || app.status === 'hired'"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="面试轮次" prop="round">
+          <el-input-number v-model="interviewForm.round" :min="1" :max="10" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="面试时间" prop="interviewTime">
+          <el-date-picker
+            v-model="interviewForm.interviewTime"
+            type="datetime"
+            placeholder="请选择面试时间"
+            style="width: 100%"
+            format="YYYY-MM-DD HH:mm"
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
+          />
+        </el-form-item>
+        <el-form-item label="面试方式" prop="method">
+          <el-radio-group v-model="interviewForm.method">
+            <el-radio value="onsite">现场</el-radio>
+            <el-radio value="online">视频</el-radio>
+            <el-radio value="phone">电话</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="面试官" prop="interviewer">
+          <el-input v-model="interviewForm.interviewer" placeholder="请输入面试官姓名" />
+        </el-form-item>
+        <el-form-item label="地点/链接">
+          <el-input v-model="interviewForm.location" placeholder="现场地址或会议链接" />
+        </el-form-item>
+        <el-form-item label="面试说明">
+          <el-input
+            v-model="interviewForm.description"
+            type="textarea"
+            :rows="2"
+            placeholder="可填写面试内容要点、注意事项等"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="interviewVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submittingInterview" @click="submitInterview">
+          确认安排
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -206,9 +267,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Phone, Briefcase, ChatDotRound, Plus } from '@element-plus/icons-vue'
+import { ArrowLeft, Phone, Briefcase, ChatDotRound, Plus, Calendar } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
-import { getCandidate, updateCandidateStatus, createNote } from '@/api'
+import { getCandidate, updateCandidateStatus, createNote, createInterview } from '@/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -255,7 +316,12 @@ const loadCandidate = async () => {
   loading.value = true
   try {
     const res = await getCandidate({ contact, name })
-    candidate.value = res.data
+    const payload = res.data || {}
+    candidate.value = {
+      ...(payload.candidate || {}),
+      messages: payload.messages || [],
+      notes: payload.notes || []
+    }
   } finally {
     loading.value = false
   }
@@ -316,6 +382,57 @@ const submitNote = async () => {
     loadCandidate()
   } finally {
     submittingNote.value = false
+  }
+}
+
+const interviewVisible = ref(false)
+const submittingInterview = ref(false)
+const interviewFormRef = ref(null)
+const interviewForm = reactive({
+  applicationId: '',
+  round: 1,
+  interviewTime: '',
+  method: 'online',
+  interviewer: '',
+  location: '',
+  description: ''
+})
+const interviewRules = {
+  applicationId: [{ required: true, message: '请选择申请', trigger: 'change' }],
+  round: [{ required: true, message: '请选择面试轮次', trigger: 'blur' }],
+  interviewTime: [{ required: true, message: '请选择面试时间', trigger: 'change' }],
+  method: [{ required: true, message: '请选择面试方式', trigger: 'change' }],
+  interviewer: [{ required: true, message: '请输入面试官', trigger: 'blur' }]
+}
+
+const openInterviewDialog = (app) => {
+  if (!candidate.value || candidate.value.applications.length === 0) {
+    ElMessage.warning('该候选人暂无有效投递申请')
+    return
+  }
+  interviewForm.applicationId = app?.id || candidate.value.applications[0].id
+  interviewForm.round = 1
+  interviewForm.interviewTime = ''
+  interviewForm.method = 'online'
+  interviewForm.interviewer = '招聘专员-刘经理'
+  interviewForm.location = ''
+  interviewForm.description = ''
+  interviewVisible.value = true
+}
+
+const submitInterview = async () => {
+  await interviewFormRef.value?.validate()
+  if (!interviewForm.applicationId || !interviewForm.interviewTime || !interviewForm.interviewer) return
+  submittingInterview.value = true
+  try {
+    await createInterview({ ...interviewForm })
+    ElMessage.success('面试已安排，候选人状态已同步为「面试中」')
+    interviewVisible.value = false
+    loadCandidate()
+  } catch (e) {
+    ElMessage.error('安排失败：' + (e?.response?.data?.error || e.message))
+  } finally {
+    submittingInterview.value = false
   }
 }
 

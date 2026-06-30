@@ -16,6 +16,7 @@ var (
 	applications []models.Application
 	messages     []models.Message
 	notes        []models.Note
+	interviews   []models.Interview
 	mu           sync.RWMutex
 )
 
@@ -240,6 +241,63 @@ func InitMockData() {
 			Content:   "简历亮点：主导过中后台系统重构，性能优化提升40%。建议邀请面试。",
 			CreatedBy: "招聘专员-刘经理",
 			CreatedAt: now.AddDate(0, 0, -1).Format(time.RFC3339),
+		},
+	}
+
+	interviews = []models.Interview{
+		{
+			ID:            uuid.New().String(),
+			ApplicationID: applications[0].ID,
+			JobID:         jobs[0].ID,
+			JobTitle:      jobs[0].Title,
+			CandidateName: "张三",
+			Contact:       "13800138001",
+			Round:         1,
+			InterviewTime: now.AddDate(0, 0, 1).Add(10 * time.Hour).Format(time.RFC3339),
+			Method:        models.InterviewMethodOnline,
+			Interviewer:   "技术总监-王工",
+			Location:      "腾讯会议",
+			Description:   "技术一面，重点考察 Go 基础、微服务架构和项目经验",
+			Status:        models.InterviewStatusScheduled,
+			LatestNote:    "已发送面试邀请，候选人已确认",
+			CreatedAt:     now.AddDate(0, 0, -1).Format(time.RFC3339),
+			UpdatedAt:     now.AddDate(0, 0, -1).Format(time.RFC3339),
+		},
+		{
+			ID:            uuid.New().String(),
+			ApplicationID: applications[1].ID,
+			JobID:         jobs[1].ID,
+			JobTitle:      jobs[1].Title,
+			CandidateName: "李四",
+			Contact:       "13800138002",
+			Round:         1,
+			InterviewTime: now.AddDate(0, 0, 2).Add(14 * time.Hour).Format(time.RFC3339),
+			Method:        models.InterviewMethodOnsite,
+			Interviewer:   "前端负责人-李工",
+			Location:      "北京市朝阳区望京SOHO T3 15层",
+			Description:   "技术一面，考察 Vue 生态和前端工程化经验",
+			Status:        models.InterviewStatusScheduled,
+			LatestNote:    "已安排会议室，等待候选人确认",
+			CreatedAt:     now.AddDate(0, 0, -0).Format(time.RFC3339),
+			UpdatedAt:     now.AddDate(0, 0, -0).Format(time.RFC3339),
+		},
+		{
+			ID:            uuid.New().String(),
+			ApplicationID: applications[2].ID,
+			JobID:         jobs[0].ID,
+			JobTitle:      jobs[0].Title,
+			CandidateName: "王五",
+			Contact:       "13800138003",
+			Round:         1,
+			InterviewTime: now.AddDate(0, 0, -1).Add(15 * time.Hour).Format(time.RFC3339),
+			Method:        models.InterviewMethodPhone,
+			Interviewer:   "招聘专员-刘经理",
+			Location:      "电话初筛",
+			Description:   "简历初筛，工作经验与岗位要求不匹配",
+			Status:        models.InterviewStatusCancelled,
+			Feedback:      "候选人工作经验2年，岗位要求5年以上，不符合要求",
+			CreatedAt:     now.AddDate(0, 0, -5).Format(time.RFC3339),
+			UpdatedAt:     now.AddDate(0, 0, -4).Format(time.RFC3339),
 		},
 	}
 }
@@ -634,6 +692,7 @@ func GetStats() models.Stats {
 
 	stats := models.Stats{
 		ApplicationsByStatus: make(map[string]int),
+		InterviewsByStatus:   make(map[string]int),
 	}
 
 	weekAgo := time.Now().AddDate(0, 0, -7)
@@ -660,5 +719,158 @@ func GetStats() models.Stats {
 
 	stats.TotalCandidates = len(candidateSet)
 
+	for _, iv := range interviews {
+		stats.TotalInterviews++
+		stats.InterviewsByStatus[string(iv.Status)]++
+		if iv.Status == models.InterviewStatusScheduled {
+			stats.PendingInterviews++
+		}
+	}
+
 	return stats
+}
+
+func ListInterviews(jobId, status, method string) []models.Interview {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	result := make([]models.Interview, 0)
+	for _, iv := range interviews {
+		if jobId != "" && iv.JobID != jobId {
+			continue
+		}
+		if status != "" && string(iv.Status) != status {
+			continue
+		}
+		if method != "" && string(iv.Method) != method {
+			continue
+		}
+		result = append(result, iv)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].InterviewTime > result[j].InterviewTime
+	})
+	return result
+}
+
+func GetInterview(id string) *models.Interview {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	for i := range interviews {
+		if interviews[i].ID == id {
+			return &interviews[i]
+		}
+	}
+	return nil
+}
+
+func CreateInterview(iv *models.Interview) *models.Interview {
+	mu.Lock()
+	defer mu.Unlock()
+
+	var app *models.Application
+	for i := range applications {
+		if applications[i].ID == iv.ApplicationID {
+			app = &applications[i]
+			break
+		}
+	}
+	if app == nil {
+		return nil
+	}
+
+	iv.ID = uuid.New().String()
+	iv.JobID = app.JobID
+	iv.JobTitle = app.JobTitle
+	iv.CandidateName = app.Resume.CandidateName
+	iv.Contact = app.Resume.Contact
+	iv.Status = models.InterviewStatusScheduled
+	now := time.Now().Format(time.RFC3339)
+	iv.CreatedAt = now
+	iv.UpdatedAt = now
+
+	interviews = append(interviews, *iv)
+
+	for i := range applications {
+		if applications[i].ID == iv.ApplicationID {
+			applications[i].Status = models.AppStatusInterview
+			break
+		}
+	}
+
+	return &interviews[len(interviews)-1]
+}
+
+func RescheduleInterview(id, newTime string) *models.Interview {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range interviews {
+		if interviews[i].ID == id {
+			interviews[i].InterviewTime = newTime
+			interviews[i].UpdatedAt = time.Now().Format(time.RFC3339)
+			return &interviews[i]
+		}
+	}
+	return nil
+}
+
+func CancelInterview(id string) *models.Interview {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range interviews {
+		if interviews[i].ID == id {
+			interviews[i].Status = models.InterviewStatusCancelled
+			interviews[i].UpdatedAt = time.Now().Format(time.RFC3339)
+
+			for j := range applications {
+				if applications[j].ID == interviews[i].ApplicationID {
+					applications[j].Status = models.AppStatusPending
+					break
+				}
+			}
+			return &interviews[i]
+		}
+	}
+	return nil
+}
+
+type CompleteInterviewRequest struct {
+	Feedback string
+	Note     string
+}
+
+func CompleteInterview(id string, req CompleteInterviewRequest) *models.Interview {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range interviews {
+		if interviews[i].ID == id {
+			interviews[i].Status = models.InterviewStatusCompleted
+			interviews[i].Feedback = req.Feedback
+			if req.Note != "" {
+				interviews[i].LatestNote = req.Note
+			}
+			interviews[i].UpdatedAt = time.Now().Format(time.RFC3339)
+			return &interviews[i]
+		}
+	}
+	return nil
+}
+
+func AddInterviewNote(id, note string) *models.Interview {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range interviews {
+		if interviews[i].ID == id {
+			interviews[i].LatestNote = note
+			interviews[i].UpdatedAt = time.Now().Format(time.RFC3339)
+			return &interviews[i]
+		}
+	}
+	return nil
 }

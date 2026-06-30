@@ -63,3 +63,31 @@ export const listNotes = (params) => {
 export const createNote = (data) => {
   return request.post('/notes', data)
 }
+
+export const listInterviews = (params) => {
+  return request.get('/interviews', { params })
+}
+
+export const getInterview = (id) => {
+  return request.get(`/interviews/${id}`)
+}
+
+export const createInterview = (data) => {
+  return request.post('/interviews', data)
+}
+
+export const rescheduleInterview = (id, data) => {
+  return request.put(`/interviews/${id}/reschedule`, data)
+}
+
+export const cancelInterview = (id) => {
+  return request.put(`/interviews/${id}/cancel`)
+}
+
+export const completeInterview = (id, data) => {
+  return request.put(`/interviews/${id}/complete`, data)
+}
+
+export const addInterviewNote = (id, data) => {
+  return request.put(`/interviews/${id}/note`, data)
+}
