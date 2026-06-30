@@ -50,7 +50,9 @@
       <div class="card-header">
         <h3 class="card-title">申请列表 <span class="count-tip">共 {{ applicationList.length }} 条</span></h3>
       </div>
-      <el-empty v-if="!loading && applicationList.length === 0" description="暂无申请记录" />
+      <el-empty v-if="!loading && applicationList.length === 0" description="暂无申请记录，投递简历后将在此显示">
+        <el-button type="primary" @click="loadApplications">重新加载</el-button>
+      </el-empty>
       <el-table v-else :data="applicationList" v-loading="loading" stripe style="width: 100%">
         <el-table-column label="候选人" min-width="140">
           <template #default="{ row }">

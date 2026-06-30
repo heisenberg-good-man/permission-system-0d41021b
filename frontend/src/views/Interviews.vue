@@ -61,7 +61,9 @@
         <h3 class="card-title">面试安排 <span class="count-tip">共 {{ interviewList.length }} 条</span></h3>
         <el-button type="primary" :icon="Plus" @click="openCreateDialog">新增面试</el-button>
       </div>
-      <el-empty v-if="!loading && interviewList.length === 0" description="暂无面试安排" />
+      <el-empty v-if="!loading && interviewList.length === 0" description="暂无面试安排，可安排新面试或检查筛选条件">
+        <el-button type="primary" @click="loadInterviews">重新加载</el-button>
+      </el-empty>
       <el-table v-else :data="interviewList" v-loading="loading" stripe style="width: 100%">
         <el-table-column label="候选人" min-width="130">
           <template #default="{ row }">
@@ -102,6 +104,14 @@
         </el-table-column>
         <el-table-column label="最近备注" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">{{ row.latestNote || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="反馈结论" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.conclusion" :type="getConclusionTagType(row.conclusion)" size="small" effect="light">
+              {{ getConclusionText(row.conclusion) }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
@@ -150,22 +160,31 @@
     </el-dialog>
 
     <el-dialog v-model="completeVisible" title="标记面试完成" width="520px" destroy-on-close>
-      <el-form :model="completeForm" label-width="100px">
-        <el-form-item label="面试反馈">
-          <el-input
-            v-model="completeForm.feedback"
-            type="textarea"
-            :rows="4"
-            placeholder="请输入面试整体评价和反馈意见，为后续面试提供参考"
-          />
+      <el-form :model="completeForm" label-width="100px" :rules="completeFormRules" ref="completeFormRef">
+        <el-form-item label="反馈结论" prop="conclusion">
+          <el-radio-group v-model="completeForm.conclusion">
+            <el-radio value="pass">通过</el-radio>
+            <el-radio value="pending">待定</el-radio>
+            <el-radio value="fail">未通过</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="评分">
+          <el-rate v-model="completeForm.rating" show-text :texts="['很差','差','一般','良好','优秀']" />
+        </el-form-item>
+        <el-form-item label="整体评价">
+          <el-input v-model="completeForm.feedback" type="textarea" :rows="3" placeholder="请输入面试整体评价和反馈意见" />
+        </el-form-item>
+        <el-form-item label="优势">
+          <el-input v-model="completeForm.strengths" type="textarea" :rows="2" placeholder="候选人表现突出的方面" />
+        </el-form-item>
+        <el-form-item label="风险点">
+          <el-input v-model="completeForm.risks" type="textarea" :rows="2" placeholder="需要关注的风险或不足" />
+        </el-form-item>
+        <el-form-item label="下一步建议">
+          <el-input v-model="completeForm.nextSteps" type="textarea" :rows="2" placeholder="后续面试或安排建议" />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input
-            v-model="completeForm.note"
-            type="textarea"
-            :rows="2"
-            placeholder="可填写后续安排或其他备注"
-          />
+          <el-input v-model="completeForm.note" type="textarea" :rows="2" placeholder="可填写后续安排或其他备注" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -306,6 +325,16 @@ const getMethodTagType = (m) => {
   return map[m] || 'info'
 }
 
+const getConclusionText = (c) => {
+  const map = { pass: '通过', pending: '待定', fail: '未通过' }
+  return map[c] || c
+}
+
+const getConclusionTagType = (c) => {
+  const map = { pass: 'success', pending: 'warning', fail: 'danger' }
+  return map[c] || 'info'
+}
+
 const loadJobs = async () => {
   try {
     const res = await listJobs()
@@ -392,19 +421,27 @@ const handleCancel = async () => {
 }
 
 const completeVisible = ref(false)
-const completeForm = reactive({ feedback: '', note: '' })
+const completeFormRef = ref(null)
+const completeForm = reactive({ conclusion: 'pass', rating: 4, feedback: '', strengths: '', risks: '', nextSteps: '', note: '' })
+const completeFormRules = { conclusion: [{ required: true, message: '请选择反馈结论', trigger: 'change' }] }
 const openCompleteDialog = (row) => {
   currentInterview.value = row
+  completeForm.conclusion = 'pass'
+  completeForm.rating = 4
   completeForm.feedback = ''
+  completeForm.strengths = ''
+  completeForm.risks = ''
+  completeForm.nextSteps = ''
   completeForm.note = ''
   completeVisible.value = true
 }
 
 const confirmComplete = async () => {
+  await completeFormRef.value?.validate()
   submitting.value = true
   try {
-    await completeInterview(currentInterview.value.id, completeForm)
-    ElMessage.success('面试已标记完成')
+    await completeInterview(currentInterview.value.id, { ...completeForm })
+    ElMessage.success('面试反馈已提交')
     completeVisible.value = false
     loadInterviews()
   } catch (e) {

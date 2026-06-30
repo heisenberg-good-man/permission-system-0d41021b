@@ -2,7 +2,7 @@
   <div class="interview-detail">
     <div class="detail-header">
       <div class="candidate-block">
-        <el-avatar :size="52" class="avatar">{{ interview.candidateName.charAt(0) }}</el-avatar>
+        <el-avatar :size="52" class="avatar">{{ interview.candidateName?.charAt(0) || '-' }}</el-avatar>
         <div class="candidate-info">
           <div class="candidate-name-row">
             <span class="name">{{ interview.candidateName }}</span>
@@ -36,9 +36,6 @@
       <el-descriptions-item label="面试地点/方式">{{ interview.location || '-' }}</el-descriptions-item>
       <el-descriptions-item label="创建时间">{{ formatTime(interview.createdAt) }}</el-descriptions-item>
       <el-descriptions-item label="面试说明" :span="2">{{ interview.description || '暂无说明' }}</el-descriptions-item>
-      <el-descriptions-item v-if="interview.feedback" label="面试反馈" :span="2">
-        <div class="feedback-box">{{ interview.feedback }}</div>
-      </el-descriptions-item>
       <el-descriptions-item v-if="interview.latestNote" label="最近备注" :span="2">
         <div class="note-box">
           <el-icon style="color: #e6a23c"><ChatDotRound /></el-icon>
@@ -52,13 +49,51 @@
       <div class="action-buttons">
         <el-button type="success" :icon="Clock" @click="openReschedule">改期</el-button>
         <el-button type="warning" :icon="CloseBold" @click="handleCancel">取消面试</el-button>
-        <el-button type="primary" :icon="Check" @click="openComplete">标记已完成</el-button>
+        <el-button type="primary" :icon="Check" @click="openFeedback">填写面试反馈</el-button>
       </div>
     </div>
 
-    <div class="action-section" v-if="interview.status === 'completed'">
-      <el-divider content-position="left">后续操作</el-divider>
-      <div class="action-buttons">
+    <div v-if="interview.status === 'completed' && hasFeedback" class="feedback-section">
+      <el-divider content-position="left">面试反馈</el-divider>
+      <div class="feedback-card">
+        <div class="fb-row">
+          <span class="fb-label">反馈结论</span>
+          <el-tag :type="getConclusionTagType(interview.conclusion)" size="default" effect="dark">
+            {{ getConclusionText(interview.conclusion) }}
+          </el-tag>
+        </div>
+        <div class="fb-row" v-if="interview.rating">
+          <span class="fb-label">评分</span>
+          <el-rate v-model="interview.rating" disabled />
+        </div>
+        <div class="fb-row" v-if="interview.feedback">
+          <span class="fb-label">整体评价</span>
+          <div class="fb-content-box">{{ interview.feedback }}</div>
+        </div>
+        <div class="fb-row" v-if="interview.strengths">
+          <span class="fb-label">优势</span>
+          <div class="fb-content-box strengths">{{ interview.strengths }}</div>
+        </div>
+        <div class="fb-row" v-if="interview.risks">
+          <span class="fb-label">风险点</span>
+          <div class="fb-content-box risks">{{ interview.risks }}</div>
+        </div>
+        <div class="fb-row" v-if="interview.nextSteps">
+          <span class="fb-label">下一步建议</span>
+          <div class="fb-content-box next-steps">{{ interview.nextSteps }}</div>
+        </div>
+      </div>
+      <div class="action-section" v-if="canCreateOffer" style="margin-top: 12px">
+        <el-button type="primary" :icon="Promotion" @click="openOfferDialog">发起 Offer</el-button>
+      </div>
+    </div>
+
+    <div v-if="interview.status === 'completed' && !hasFeedback" class="feedback-section">
+      <el-divider content-position="left">面试反馈</el-divider>
+      <el-empty description="该面试尚未填写结构化反馈" :image-size="60">
+        <el-button type="primary" @click="openFeedback">补充反馈</el-button>
+      </el-empty>
+      <div class="action-section" style="margin-top: 12px">
         <el-button type="primary" :icon="Promotion" @click="openOfferDialog">发起 Offer</el-button>
       </div>
     </div>
@@ -106,28 +141,62 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="completeVisible" title="标记面试完成" width="480px" destroy-on-close>
-      <el-form :model="completeForm" label-width="90px">
-        <el-form-item label="面试反馈">
+    <el-dialog v-model="feedbackVisible" title="面试反馈" width="560px" destroy-on-close>
+      <el-form :model="feedbackForm" label-width="100px" :rules="feedbackRules" ref="feedbackFormRef">
+        <el-form-item label="反馈结论" prop="conclusion">
+          <el-radio-group v-model="feedbackForm.conclusion">
+            <el-radio value="pass">通过</el-radio>
+            <el-radio value="pending">待定</el-radio>
+            <el-radio value="fail">不通过</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="评分">
+          <el-rate v-model="feedbackForm.rating" show-text :texts="['很差','差','一般','良好','优秀']" />
+        </el-form-item>
+        <el-form-item label="整体评价">
           <el-input
-            v-model="completeForm.feedback"
+            v-model="feedbackForm.feedback"
             type="textarea"
-            :rows="4"
-            placeholder="请输入面试整体评价和反馈意见"
+            :rows="3"
+            placeholder="请填写面试整体评价和反馈意见"
+          />
+        </el-form-item>
+        <el-form-item label="优势">
+          <el-input
+            v-model="feedbackForm.strengths"
+            type="textarea"
+            :rows="2"
+            placeholder="候选人的突出优势、亮点等"
+          />
+        </el-form-item>
+        <el-form-item label="风险点">
+          <el-input
+            v-model="feedbackForm.risks"
+            type="textarea"
+            :rows="2"
+            placeholder="候选人的不足、潜在风险等"
+          />
+        </el-form-item>
+        <el-form-item label="下一步建议">
+          <el-input
+            v-model="feedbackForm.nextSteps"
+            type="textarea"
+            :rows="2"
+            placeholder="建议后续安排，如推进二面、发Offer等"
           />
         </el-form-item>
         <el-form-item label="备注">
           <el-input
-            v-model="completeForm.note"
+            v-model="feedbackForm.note"
             type="textarea"
             :rows="2"
-            placeholder="可填写后续安排"
+            placeholder="可填写其他备注"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="completeVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="confirmComplete">确认完成</el-button>
+        <el-button @click="feedbackVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="confirmFeedback">提交反馈</el-button>
       </template>
     </el-dialog>
   </div>
@@ -169,6 +238,23 @@ const getMethodTagType = (m) => {
   const map = { onsite: 'warning', online: 'primary', phone: 'info' }
   return map[m] || 'info'
 }
+const getConclusionText = (c) => {
+  const map = { pass: '通过', pending: '待定', fail: '不通过' }
+  return map[c] || c
+}
+const getConclusionTagType = (c) => {
+  const map = { pass: 'success', pending: 'warning', fail: 'danger' }
+  return map[c] || 'info'
+}
+
+const hasFeedback = computed(() => {
+  return props.interview.conclusion || props.interview.rating || props.interview.feedback
+})
+
+const canCreateOffer = computed(() => {
+  return props.interview.status === 'completed' &&
+    (props.interview.conclusion === 'pass' || props.interview.conclusion === 'pending')
+})
 
 const noteForm = reactive({ note: '' })
 const submitNote = async () => {
@@ -231,22 +317,48 @@ const handleCancel = () => {
   }).catch(() => {})
 }
 
-const completeVisible = ref(false)
-const completeForm = reactive({ feedback: '', note: '' })
-const openComplete = () => {
-  completeForm.feedback = ''
-  completeForm.note = ''
-  completeVisible.value = true
+const feedbackVisible = ref(false)
+const feedbackFormRef = ref(null)
+const feedbackForm = reactive({
+  conclusion: 'pass',
+  rating: 4,
+  feedback: '',
+  strengths: '',
+  risks: '',
+  nextSteps: '',
+  note: ''
+})
+const feedbackRules = {
+  conclusion: [{ required: true, message: '请选择反馈结论', trigger: 'change' }]
 }
-const confirmComplete = async () => {
+const openFeedback = () => {
+  feedbackForm.conclusion = props.interview.conclusion || 'pass'
+  feedbackForm.rating = props.interview.rating || 4
+  feedbackForm.feedback = props.interview.feedback || ''
+  feedbackForm.strengths = props.interview.strengths || ''
+  feedbackForm.risks = props.interview.risks || ''
+  feedbackForm.nextSteps = props.interview.nextSteps || ''
+  feedbackForm.note = ''
+  feedbackVisible.value = true
+}
+const confirmFeedback = async () => {
+  await feedbackFormRef.value?.validate()
   submitting.value = true
   try {
-    await completeInterview(props.interview.id, completeForm)
-    ElMessage.success('面试已标记完成')
-    completeVisible.value = false
+    await completeInterview(props.interview.id, {
+      conclusion: feedbackForm.conclusion,
+      rating: feedbackForm.rating,
+      feedback: feedbackForm.feedback,
+      strengths: feedbackForm.strengths,
+      risks: feedbackForm.risks,
+      nextSteps: feedbackForm.nextSteps,
+      note: feedbackForm.note
+    })
+    ElMessage.success('面试反馈已提交')
+    feedbackVisible.value = false
     emit('updated')
   } catch (e) {
-    ElMessage.error('操作失败：' + (e?.response?.data?.error || e.message))
+    ElMessage.error('提交失败：' + (e?.response?.data?.error || e.message))
   } finally {
     submitting.value = false
   }
@@ -339,15 +451,6 @@ const handleOfferSuccess = () => {
   gap: 4px;
 }
 
-.feedback-box {
-  padding: 10px 12px;
-  background: #f0f9ff;
-  border-radius: 6px;
-  border-left: 3px solid #409eff;
-  line-height: 1.6;
-  color: #303133;
-}
-
 .note-box {
   padding: 8px 12px;
   background: #fdf6ec;
@@ -357,6 +460,58 @@ const handleOfferSuccess = () => {
   gap: 6px;
   color: #606266;
   line-height: 1.5;
+}
+
+.feedback-section {
+  margin-top: 4px;
+}
+
+.feedback-card {
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fb-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.fb-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #606266;
+  min-width: 80px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.fb-content-box {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 6px;
+  line-height: 1.7;
+  color: #303133;
+  font-size: 14px;
+}
+
+.fb-content-box.strengths {
+  background: #f0f9eb;
+  border-left: 3px solid #67c23a;
+}
+
+.fb-content-box.risks {
+  background: #fef0f0;
+  border-left: 3px solid #f56c6c;
+}
+
+.fb-content-box.next-steps {
+  background: #fdf6ec;
+  border-left: 3px solid #e6a23c;
 }
 
 .action-section {

@@ -1,5 +1,10 @@
 <template>
-  <div class="stats-page">
+  <div v-if="loadError" class="error-tip">
+    <el-empty description="统计数据加载失败，请检查后端服务">
+      <el-button type="primary" @click="loadAll">重新加载</el-button>
+    </el-empty>
+  </div>
+  <div v-else class="stats-page">
     <el-row :gutter="16">
       <el-col :span="3" v-for="card in statCards" :key="card.key">
         <el-card class="stat-card" shadow="never" :body-style="{ padding: '16px' }">
@@ -101,6 +106,7 @@ import {
 import { getStats, listApplications, listJobs } from '@/api'
 
 const loading = ref(true)
+const loadError = ref(false)
 const pieChartRef = ref(null)
 const barChartRef = ref(null)
 let pieChart = null
@@ -283,6 +289,7 @@ const updateBarChart = (apps, jobs) => {
 
 const loadAll = async () => {
   loading.value = true
+  loadError.value = false
   try {
     const [statsRes, appsRes, jobsRes] = await Promise.all([
       getStats(), listApplications({}), listJobs({})
@@ -312,6 +319,9 @@ const loadAll = async () => {
     if (!pieChart || !barChart) initCharts()
     updatePieChart(stats.applicationsByStatus || {})
     updateBarChart(apps, jobs)
+  } catch (e) {
+    console.error('统计数据加载失败:', e)
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -321,6 +331,13 @@ onMounted(loadAll)
 </script>
 
 <style scoped>
+.error-tip {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .stats-page {
   display: flex;
   flex-direction: column;

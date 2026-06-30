@@ -16,9 +16,13 @@
       </el-form-item>
       <el-form-item label="薪资范围">
         <div style="display: flex; align-items: center; gap: 8px; width: 100%">
-          <el-input-number v-model="form.salaryMin" :min="0" :step="1000" style="flex: 1" placeholder="最低薪资" />
+          <el-form-item prop="salaryMin" style="flex: 1; margin-bottom: 0">
+            <el-input-number v-model="form.salaryMin" :min="0" :step="1000" style="width: 100%" placeholder="最低薪资" />
+          </el-form-item>
           <span>至</span>
-          <el-input-number v-model="form.salaryMax" :min="0" :step="1000" style="flex: 1" placeholder="最高薪资" />
+          <el-form-item prop="salaryMax" style="flex: 1; margin-bottom: 0">
+            <el-input-number v-model="form.salaryMax" :min="0" :step="1000" style="width: 100%" placeholder="最高薪资" />
+          </el-form-item>
         </div>
       </el-form-item>
       <el-form-item label="入职日期" prop="startDate">
@@ -31,7 +35,7 @@
           value-format="YYYY-MM-DD"
         />
       </el-form-item>
-      <el-form-item label="负责人">
+      <el-form-item label="负责人" prop="owner">
         <el-input v-model="form.owner" placeholder="请输入负责人，默认招聘专员-刘经理" />
       </el-form-item>
       <el-form-item label="补充说明">
@@ -81,7 +85,10 @@ const form = reactive({
 
 const rules = {
   applicationId: [{ required: true, message: '请选择投递申请', trigger: 'change' }],
-  startDate: [{ required: true, message: '请选择入职日期', trigger: 'change' }]
+  startDate: [{ required: true, message: '请选择入职日期', trigger: 'change' }],
+  owner: [{ required: true, message: '请输入负责人', trigger: 'blur' }],
+  salaryMin: [{ required: true, message: '请输入最低薪资', trigger: 'blur' }],
+  salaryMax: [{ required: true, message: '请输入最高薪资', trigger: 'blur' }]
 }
 
 watch(() => props.modelValue, (v) => {
@@ -101,7 +108,10 @@ const handleClose = () => {
 
 const handleSubmit = async () => {
   await formRef.value?.validate()
-  if (!form.applicationId || !form.startDate) return
+  if (!form.applicationId || !form.startDate || !form.owner.trim()) {
+    ElMessage.warning('请填写所有必填项')
+    return
+  }
   if (form.salaryMax < form.salaryMin) {
     ElMessage.warning('最高薪资不能低于最低薪资')
     return

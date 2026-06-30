@@ -10,15 +10,15 @@ import (
 )
 
 type createJobRequest struct {
-	Title        string          `json:"title" binding:"required"`
-	Department   string          `json:"department" binding:"required"`
-	Location     string          `json:"location" binding:"required"`
-	SalaryMin    int             `json:"salaryMin" binding:"required,min=0"`
-	SalaryMax    int             `json:"salaryMax" binding:"required,min=0"`
+	Title        string           `json:"title" binding:"required"`
+	Department   string           `json:"department" binding:"required"`
+	Location     string           `json:"location" binding:"required"`
+	SalaryMin    int              `json:"salaryMin" binding:"required,min=0"`
+	SalaryMax    int              `json:"salaryMax" binding:"required,min=0"`
 	Status       models.JobStatus `json:"status" binding:"required"`
-	Headcount    int             `json:"headcount" binding:"required,min=1"`
-	Description  string          `json:"description"`
-	Requirements string          `json:"requirements"`
+	Headcount    int              `json:"headcount" binding:"required,min=1"`
+	Description  string           `json:"description"`
+	Requirements string           `json:"requirements"`
 }
 
 func ListJobs(c *gin.Context) {
@@ -93,7 +93,7 @@ func UpdateJob(c *gin.Context) {
 }
 
 type createApplicationRequest struct {
-	JobID  string       `json:"jobId" binding:"required"`
+	JobID  string        `json:"jobId" binding:"required"`
 	Resume models.Resume `json:"resume" binding:"required"`
 }
 
@@ -241,8 +241,8 @@ func GetCandidate(c *gin.Context) {
 }
 
 type updateCandidateStatusRequest struct {
-	Contact string                     `json:"contact" binding:"required"`
-	Name    string                     `json:"name" binding:"required"`
+	Contact string                   `json:"contact" binding:"required"`
+	Name    string                   `json:"name" binding:"required"`
 	Status  models.ApplicationStatus `json:"status" binding:"required"`
 }
 
@@ -283,11 +283,11 @@ func ListNotes(c *gin.Context) {
 }
 
 type createNoteRequest struct {
-	Candidate string           `json:"candidate" binding:"required"`
-	Contact   string           `json:"contact" binding:"required"`
+	Candidate string          `json:"candidate" binding:"required"`
+	Contact   string          `json:"contact" binding:"required"`
 	Type      models.NoteType `json:"type" binding:"required"`
-	Content   string           `json:"content" binding:"required"`
-	CreatedBy string           `json:"createdBy"`
+	Content   string          `json:"content" binding:"required"`
+	CreatedBy string          `json:"createdBy"`
 }
 
 func CreateNote(c *gin.Context) {
@@ -339,13 +339,13 @@ func GetInterview(c *gin.Context) {
 }
 
 type createInterviewRequest struct {
-	ApplicationID string                `json:"applicationId" binding:"required"`
-	Round         int                   `json:"round" binding:"required,min=1"`
-	InterviewTime string                `json:"interviewTime" binding:"required"`
+	ApplicationID string                 `json:"applicationId" binding:"required"`
+	Round         int                    `json:"round" binding:"required,min=1"`
+	InterviewTime string                 `json:"interviewTime" binding:"required"`
 	Method        models.InterviewMethod `json:"method" binding:"required"`
-	Interviewer   string                `json:"interviewer" binding:"required"`
-	Location      string                `json:"location"`
-	Description   string                `json:"description"`
+	Interviewer   string                 `json:"interviewer" binding:"required"`
+	Location      string                 `json:"location"`
+	Description   string                 `json:"description"`
 }
 
 func CreateInterview(c *gin.Context) {
@@ -357,8 +357,8 @@ func CreateInterview(c *gin.Context) {
 
 	validMethods := map[models.InterviewMethod]bool{
 		models.InterviewMethodOnsite: true,
-		models.InterviewMethodOnline:  true,
-		models.InterviewMethodPhone:   true,
+		models.InterviewMethodOnline: true,
+		models.InterviewMethodPhone:  true,
 	}
 	if !validMethods[req.Method] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的面试方式"})
@@ -416,8 +416,13 @@ func CancelInterview(c *gin.Context) {
 }
 
 type completeInterviewRequest struct {
-	Feedback string `json:"feedback"`
-	Note     string `json:"note"`
+	Feedback   string `json:"feedback"`
+	Note       string `json:"note"`
+	Conclusion string `json:"conclusion"`
+	Rating     int    `json:"rating"`
+	Strengths  string `json:"strengths"`
+	Risks      string `json:"risks"`
+	NextSteps  string `json:"nextSteps"`
 }
 
 func CompleteInterview(c *gin.Context) {
@@ -430,8 +435,13 @@ func CompleteInterview(c *gin.Context) {
 	}
 
 	updated := store.CompleteInterview(id, store.CompleteInterviewRequest{
-		Feedback: req.Feedback,
-		Note:     req.Note,
+		Feedback:   req.Feedback,
+		Note:       req.Note,
+		Conclusion: req.Conclusion,
+		Rating:     req.Rating,
+		Strengths:  req.Strengths,
+		Risks:      req.Risks,
+		NextSteps:  req.NextSteps,
 	})
 	if updated == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "面试安排不存在"})

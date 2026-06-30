@@ -127,6 +127,31 @@
 
         <el-card class="timeline-card" shadow="never" style="margin-top: 16px">
           <div class="card-header">
+            <h3 class="card-title">面试记录</h3>
+          </div>
+          <div v-if="candidateInterviews.length > 0" class="interview-simple-list">
+            <div v-for="iv in candidateInterviews" :key="iv.id" class="interview-simple-item" @click="openInterviewDetail(iv)">
+              <div class="iv-item-header">
+                <el-tag type="info" size="small" effect="plain">{{ iv.jobTitle }}</el-tag>
+                <el-tag :type="iv.status === 'scheduled' ? 'primary' : iv.status === 'completed' ? 'success' : 'info'" size="small">
+                  {{ iv.status === 'scheduled' ? '待面试' : iv.status === 'completed' ? '已完成' : '已取消' }}
+                </el-tag>
+                <el-tag v-if="iv.conclusion" :type="iv.conclusion === 'pass' ? 'success' : iv.conclusion === 'pending' ? 'warning' : 'danger'" size="small" effect="plain">
+                  {{ iv.conclusion === 'pass' ? '通过' : iv.conclusion === 'pending' ? '待定' : '不通过' }}
+                </el-tag>
+                <span class="iv-time">{{ formatTime(iv.interviewTime) }}</span>
+              </div>
+              <div class="iv-item-meta">
+                第{{ iv.round }}轮 · {{ iv.interviewer }} · {{ iv.method === 'onsite' ? '现场' : iv.method === 'online' ? '视频' : '电话' }}
+              </div>
+              <div v-if="iv.feedback" class="iv-item-feedback">{{ iv.feedback }}</div>
+            </div>
+          </div>
+          <el-empty v-else description="暂无面试记录" :image-size="100" />
+        </el-card>
+
+        <el-card class="timeline-card" shadow="never" style="margin-top: 16px">
+          <div class="card-header">
             <h3 class="card-title">沟通记录</h3>
           </div>
           <div v-if="candidate && candidate.messages && candidate.messages.length > 0" class="message-simple-list">
@@ -264,6 +289,10 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="interviewDetailVisible" title="面试详情" width="640px" destroy-on-close>
+      <InterviewDetailContent v-if="currentInterview" :interview="currentInterview" @updated="onInterviewUpdated" />
+    </el-dialog>
+
     <OfferDialog
       v-model="offerVisible"
       :applications="candidate?.applications || []"
@@ -279,8 +308,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Phone, Briefcase, ChatDotRound, Plus, Calendar, Promotion } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
-import { getCandidate, updateCandidateStatus, createNote, createInterview } from '@/api'
+import { getCandidate, updateCandidateStatus, createNote, createInterview, listInterviews, getInterview } from '@/api'
 import OfferDialog from './OfferDialog.vue'
+import InterviewDetailContent from './InterviewDetailContent.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -288,6 +318,7 @@ const router = useRouter()
 const loading = ref(false)
 const submittingNote = ref(false)
 const candidate = ref(null)
+const candidateInterviews = ref([])
 
 const noteForm = reactive({
   type: 'interview',
@@ -333,9 +364,41 @@ const loadCandidate = async () => {
       messages: payload.messages || [],
       notes: payload.notes || []
     }
+    loadInterviews()
   } finally {
     loading.value = false
   }
+}
+
+const loadInterviews = async () => {
+  if (!candidate.value || !candidate.value.applications) return
+  try {
+    const res = await listInterviews({})
+    const allIvs = res?.data || []
+    const appIds = new Set(candidate.value.applications.map(a => a.id))
+    candidateInterviews.value = allIvs
+      .filter(iv => appIds.has(iv.applicationId))
+      .sort((a, b) => new Date(b.interviewTime) - new Date(a.interviewTime))
+  } catch (e) {
+    candidateInterviews.value = []
+  }
+}
+
+const interviewDetailVisible = ref(false)
+const currentInterview = ref(null)
+const openInterviewDetail = async (iv) => {
+  try {
+    const res = await getInterview(iv.id)
+    currentInterview.value = res?.data || iv
+  } catch (e) {
+    currentInterview.value = iv
+  }
+  interviewDetailVisible.value = true
+}
+
+const onInterviewUpdated = () => {
+  loadCandidate()
+  loadInterviews()
 }
 
 const goBack = () => {
@@ -650,5 +713,51 @@ onMounted(() => {
   color: #606266;
   line-height: 1.7;
   white-space: pre-wrap;
+}
+
+.interview-simple-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.interview-simple-item {
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.interview-simple-item:hover {
+  background: #ecf5ff;
+}
+
+.iv-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.iv-time {
+  font-size: 12px;
+  color: #909399;
+  margin-left: auto;
+}
+
+.iv-item-meta {
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 4px;
+}
+
+.iv-item-feedback {
+  font-size: 13px;
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 </style>

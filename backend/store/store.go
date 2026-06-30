@@ -871,8 +871,13 @@ func CancelInterview(id string) *models.Interview {
 }
 
 type CompleteInterviewRequest struct {
-	Feedback string
-	Note     string
+	Feedback   string
+	Note       string
+	Conclusion string
+	Rating     int
+	Strengths  string
+	Risks      string
+	NextSteps  string
 }
 
 func CompleteInterview(id string, req CompleteInterviewRequest) *models.Interview {
@@ -883,6 +888,15 @@ func CompleteInterview(id string, req CompleteInterviewRequest) *models.Intervie
 		if interviews[i].ID == id {
 			interviews[i].Status = models.InterviewStatusCompleted
 			interviews[i].Feedback = req.Feedback
+			if req.Conclusion != "" {
+				interviews[i].Conclusion = models.InterviewFeedbackConclusion(req.Conclusion)
+			}
+			if req.Rating > 0 {
+				interviews[i].Rating = req.Rating
+			}
+			interviews[i].Strengths = req.Strengths
+			interviews[i].Risks = req.Risks
+			interviews[i].NextSteps = req.NextSteps
 			if req.Note != "" {
 				interviews[i].LatestNote = req.Note
 			}

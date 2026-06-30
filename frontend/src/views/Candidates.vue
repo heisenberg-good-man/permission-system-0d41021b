@@ -42,7 +42,9 @@
       <div class="card-header">
         <h3 class="card-title">候选人列表 <span class="count-tip">共 {{ candidateList.length }} 位</span></h3>
       </div>
-      <el-empty v-if="!loading && candidateList.length === 0" description="暂无候选人数据" />
+      <el-empty v-if="!loading && candidateList.length === 0" description="暂无候选人数据，候选人将在投递简历后自动出现">
+        <el-button type="primary" @click="loadCandidates">重新加载</el-button>
+      </el-empty>
       <el-table v-else :data="candidateList" v-loading="loading" stripe style="width: 100%">
         <el-table-column label="候选人" min-width="160">
           <template #default="{ row }">

@@ -78,6 +78,14 @@ type Offer struct {
 	RepliedAt       string      `json:"repliedAt,omitempty"`
 }
 
+type InterviewFeedbackConclusion string
+
+const (
+	FeedbackPass    InterviewFeedbackConclusion = "pass"
+	FeedbackPending InterviewFeedbackConclusion = "pending"
+	FeedbackFail    InterviewFeedbackConclusion = "fail"
+)
+
 type Interview struct {
 	ID              string          `json:"id"`
 	ApplicationID   string          `json:"applicationId"`
@@ -93,6 +101,11 @@ type Interview struct {
 	Description     string          `json:"description"`
 	Status          InterviewStatus `json:"status"`
 	Feedback        string          `json:"feedback,omitempty"`
+	Conclusion      InterviewFeedbackConclusion `json:"conclusion,omitempty"`
+	Rating          int             `json:"rating,omitempty"`
+	Strengths       string          `json:"strengths,omitempty"`
+	Risks           string          `json:"risks,omitempty"`
+	NextSteps       string          `json:"nextSteps,omitempty"`
 	LatestNote      string          `json:"latestNote,omitempty"`
 	CreatedAt       string          `json:"createdAt"`
 	UpdatedAt       string          `json:"updatedAt"`

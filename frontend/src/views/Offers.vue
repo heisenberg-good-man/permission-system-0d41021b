@@ -50,7 +50,9 @@
       <div class="card-header">
         <h3 class="card-title">Offer 列表 <span class="count-tip">共 {{ offerList.length }} 条</span></h3>
       </div>
-      <el-empty v-if="!loading && offerList.length === 0" description="暂无 Offer 记录" />
+      <el-empty v-if="!loading && offerList.length === 0" description="暂无 Offer 记录，面试通过的候选人可发起 Offer">
+        <el-button type="primary" @click="loadOffers">重新加载</el-button>
+      </el-empty>
       <el-table :data="offerList" v-loading="loading" stripe style="width: 100%">
         <el-table-column label="候选人" min-width="130">
           <template #default="{ row }">

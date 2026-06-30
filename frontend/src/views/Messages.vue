@@ -1,6 +1,11 @@
 <template>
   <div class="messages-page">
-    <el-row :gutter="16">
+    <div v-if="loadError" class="error-tip">
+      <el-empty description="加载沟通列表失败，请检查网络或后端服务">
+        <el-button type="primary" @click="loadApplications">重新加载</el-button>
+      </el-empty>
+    </div>
+    <el-row v-else :gutter="16">
       <el-col :span="9">
         <el-card class="conversation-card" shadow="never">
           <div class="card-header">
@@ -180,6 +185,7 @@ import { listApplications, listMessages, sendMessage as sendMessageApi, updateAp
 
 const route = useRoute()
 const loading = ref(false)
+const loadError = ref(false)
 const applications = ref([])
 const searchKeyword = ref('')
 const currentApplication = ref(null)
@@ -226,6 +232,7 @@ const filteredApplications = computed(() => {
 
 const loadApplications = async () => {
   loading.value = true
+  loadError.value = false
   try {
     const res = await listApplications({})
     applications.value = (res.data || []).sort((a, b) => {
@@ -233,6 +240,8 @@ const loadApplications = async () => {
       const tb = b.lastMessageTime || b.submittedAt
       return new Date(tb) - new Date(ta)
     })
+  } catch (e) {
+    loadError.value = true
   } finally {
     loading.value = false
   }
@@ -242,8 +251,12 @@ const selectApplication = async (app) => {
   currentApplication.value = app
   candidateSenderName.value = app.resume.candidateName
   messageList.value = []
-  const res = await listMessages(app.id)
-  messageList.value = res.data || []
+  try {
+    const res = await listMessages(app.id)
+    messageList.value = res.data || []
+  } catch (e) {
+    messageList.value = []
+  }
   await nextTick()
   scrollToBottom()
 }
@@ -307,11 +320,19 @@ const onStatusChange = async (newStatus) => {
 }
 
 watch(
-  () => route.query.applicationId,
-  async (val) => {
-    if (!val) return
+  () => route.query,
+  async (query) => {
+    const appId = query.applicationId
+    const contact = query.contact
+    if (!appId && !contact) return
     await loadApplications()
-    const app = applications.value.find(a => a.id === val)
+    let app = null
+    if (appId) {
+      app = applications.value.find(a => a.id === appId)
+    }
+    if (!app && contact) {
+      app = applications.value.find(a => a.resume?.contact === contact)
+    }
     if (app) selectApplication(app)
   },
   { immediate: true }
@@ -622,5 +643,12 @@ onMounted(loadApplications)
 .empty-chat-icon {
   font-size: 140px;
   color: #dcdfe6;
+}
+
+.error-tip {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

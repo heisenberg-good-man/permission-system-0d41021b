@@ -34,6 +34,7 @@
                 <div class="iv-row1">
                   <span class="iv-name">{{ iv.candidateName }}</span>
                   <el-tag size="small" :type="getIvStatusTag(iv.status)">{{ getIvStatusText(iv.status) }}</el-tag>
+                  <el-tag v-if="iv.conclusion" size="small" :type="iv.conclusion === 'pass' ? 'success' : iv.conclusion === 'pending' ? 'warning' : 'danger'" effect="plain">{{ iv.conclusion === 'pass' ? '通过' : iv.conclusion === 'pending' ? '待定' : '不通过' }}</el-tag>
                   <el-tag size="small" effect="plain" type="info">{{ getIvMethodText(iv.method) }}</el-tag>
                 </div>
                 <div class="iv-row2">
@@ -51,7 +52,7 @@
               <div class="iv-actions">
                 <el-button v-if="iv.status === 'scheduled'" size="small" type="success" @click.stop="quickReschedule(iv)">改期</el-button>
                 <el-button v-if="iv.status === 'scheduled'" size="small" type="warning" @click.stop="quickComplete(iv)">完成</el-button>
-                <el-button v-if="iv.status === 'completed'" size="small" type="primary" @click.stop="quickCreateOffer(iv)">发 Offer</el-button>
+                <el-button v-if="iv.status === 'completed' && (iv.conclusion === 'pass' || iv.conclusion === 'pending')" size="small" type="primary" @click.stop="quickCreateOffer(iv)">发 Offer</el-button>
               </div>
             </div>
           </div>
@@ -250,23 +251,31 @@
     </el-dialog>
 
     <el-dialog v-model="completeVisible" title="标记面试完成" width="520px" destroy-on-close>
-      <el-form :model="completeForm" label-width="90px">
-        <el-form-item label="面试结果">
-          <el-radio-group v-model="completeForm.passed">
-            <el-radio :value="true">通过</el-radio>
-            <el-radio :value="false">未通过</el-radio>
+      <el-form ref="completeFormRef" :model="completeForm" :rules="completeFormRules" label-width="90px">
+        <el-form-item label="反馈结论" prop="conclusion">
+          <el-radio-group v-model="completeForm.conclusion">
+            <el-radio value="pass">通过</el-radio>
+            <el-radio value="pending">待定</el-radio>
+            <el-radio value="fail">不通过</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="整体评价">
-          <el-rate v-model="completeForm.rating" />
+        <el-form-item label="评分">
+          <el-rate v-model="completeForm.rating" show-text :texts="['很差','差','一般','良好','优秀']" />
         </el-form-item>
-        <el-form-item label="面试反馈">
-          <el-input
-            v-model="completeForm.feedback"
-            type="textarea"
-            :rows="4"
-            placeholder="请填写面试表现、优缺点、录用建议等"
-          />
+        <el-form-item label="整体评价">
+          <el-input v-model="completeForm.feedback" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="优势">
+          <el-input v-model="completeForm.strengths" type="textarea" :rows="2" />
+        </el-form-item>
+        <el-form-item label="风险点">
+          <el-input v-model="completeForm.risks" type="textarea" :rows="2" />
+        </el-form-item>
+        <el-form-item label="下一步建议">
+          <el-input v-model="completeForm.nextSteps" type="textarea" :rows="2" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="completeForm.note" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -490,21 +499,28 @@ const openOfferDetail = (o) => {
 }
 
 const completeVisible = ref(false)
-const completeForm = reactive({ rating: 4, passed: true, feedback: '' })
+const completeForm = reactive({ conclusion: 'pass', rating: 4, feedback: '', strengths: '', risks: '', nextSteps: '', note: '' })
+const completeFormRef = ref(null)
+const completeFormRules = { conclusion: [{ required: true, message: '请选择反馈结论', trigger: 'change' }] }
 let completingIv = null
 const quickComplete = (iv) => {
   completingIv = iv
+  completeForm.conclusion = 'pass'
   completeForm.rating = 4
-  completeForm.passed = true
   completeForm.feedback = ''
+  completeForm.strengths = ''
+  completeForm.risks = ''
+  completeForm.nextSteps = ''
+  completeForm.note = ''
   completeVisible.value = true
 }
 const confirmComplete = async () => {
   if (!completingIv) return
+  await completeFormRef.value?.validate()
   submitting.value = true
   try {
     await completeInterview(completingIv.id, { ...completeForm })
-    ElMessage.success('面试已标记完成')
+    ElMessage.success('面试反馈已提交')
     completeVisible.value = false
     reloadAll()
   } catch (e) {
