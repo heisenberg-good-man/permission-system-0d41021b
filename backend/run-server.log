@@ -1,0 +1,26 @@
+=== Start build at 周二 2026/06/30  0:03:14.87 === 
+ 
+=== go mod tidy === 
+go: downloading github.com/google/uuid v1.5.0
+go: downloading github.com/gin-gonic/gin v1.9.1
+go: downloading github.com/gin-contrib/cors v1.5.0
+go: recruitment-platform imports
+	github.com/gin-contrib/cors: github.com/gin-contrib/cors@v1.5.0: Get "https://proxy.golang.org/github.com/gin-contrib/cors/@v/v1.5.0.zip": dial tcp 142.251.33.209:443: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+go: recruitment-platform imports
+	github.com/gin-gonic/gin: github.com/gin-gonic/gin@v1.9.1: Get "https://proxy.golang.org/github.com/gin-gonic/gin/@v/v1.9.1.zip": dial tcp 142.251.33.209:443: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+go: recruitment-platform/store imports
+	github.com/google/uuid: github.com/google/uuid@v1.5.0: Get "https://proxy.golang.org/github.com/google/uuid/@v/v1.5.0.zip": dial tcp 142.251.33.209:443: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+EXIT CODE: 1 
+ 
+=== go build === 
+go: downloading github.com/gin-contrib/cors v1.5.0
+go: downloading github.com/gin-gonic/gin v1.9.1
+go: downloading github.com/google/uuid v1.5.0
+main.go:7:2: github.com/gin-contrib/cors@v1.5.0: Get "https://proxy.golang.org/github.com/gin-contrib/cors/@v/v1.5.0.zip": dial tcp 142.251.33.209:443: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+main.go:8:2: github.com/gin-gonic/gin@v1.9.1: Get "https://proxy.golang.org/github.com/gin-gonic/gin/@v/v1.9.1.zip": dial tcp 142.251.33.209:443: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+store\store.go:7:2: github.com/google/uuid@v1.5.0: Get "https://proxy.golang.org/github.com/google/uuid/@v/v1.5.0.zip": dial tcp 142.251.33.209:443: connectex: A connection attempt failed because the connected party did not properly respond after a period of time, or established connection failed because connected host has failed to respond.
+EXIT CODE: 1 
+ 
+ERROR: server.exe NOT created 
+ 
+=== Done at 周二 2026/06/30  0:06:29.55 === 

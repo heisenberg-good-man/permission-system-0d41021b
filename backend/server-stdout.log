@@ -1,0 +1,21 @@
+﻿[2026-06-30 00:34:02] Starting backend server...
+[2026-06-30 00:34:02] Backend server started. PID: 12492
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+[GIN-debug] GET    /api/health               --> main.main.func1 (4 handlers)
+[GIN-debug] GET    /api/jobs                 --> recruitment-platform/handlers.ListJobs (4 handlers)
+[GIN-debug] GET    /api/jobs/:id             --> recruitment-platform/handlers.GetJob (4 handlers)
+[GIN-debug] POST   /api/jobs                 --> recruitment-platform/handlers.CreateJob (4 handlers)
+[GIN-debug] PUT    /api/jobs/:id             --> recruitment-platform/handlers.UpdateJob (4 handlers)
+[GIN-debug] GET    /api/applications         --> recruitment-platform/handlers.ListApplications (4 handlers)
+[GIN-debug] GET    /api/applications/:id     --> recruitment-platform/handlers.GetApplication (4 handlers)
+[GIN-debug] POST   /api/applications         --> recruitment-platform/handlers.CreateApplication (4 handlers)
+[GIN-debug] PUT    /api/applications/:id/status --> recruitment-platform/handlers.UpdateApplicationStatus (4 handlers)
+[GIN-debug] GET    /api/messages/application/:applicationId --> recruitment-platform/handlers.ListMessages (4 handlers)
+[GIN-debug] POST   /api/messages             --> recruitment-platform/handlers.SendMessage (4 handlers)
+[GIN-debug] GET    /api/stats                --> recruitment-platform/handlers.GetStats (4 handlers)
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080

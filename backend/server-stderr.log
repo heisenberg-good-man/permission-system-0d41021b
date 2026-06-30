@@ -1,0 +1,4 @@
+2026/06/30 00:32:06 Server starting on :8080
+[GIN-debug] [ERROR] listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+2026/06/30 00:32:06 Failed to start server: listen tcp :8080: bind: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+2026/06/30 00:34:03 Server starting on :8080

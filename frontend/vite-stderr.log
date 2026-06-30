@@ -1,0 +1,20 @@
+Error: [31m  Failed to scan for dependencies from entries:
+  d:/code-space/coding-soler/permission-system-0d41021b/frontend/index.html
+  [39m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mThe symbol "sendMessage" has already been declared[0m
+    script:D:/code-space/coding-soler/permission-system-0d41021b/frontend/src/views/Messages.vue?id=0:105:6:
+[37m      105 │ const [32msendMessage[37m = async () => {
+          ╵       [32m~~~~~~~~~~~[0m
+  The symbol "sendMessage" was originally declared here:
+    script:D:/code-space/coding-soler/permission-system-0d41021b/frontend/src/views/Messages.vue?id=0:7:41:
+[37m      7 │ ...pplications, listMessages, [32msendMessage[37m, updateApplicationStatus ...
+        ╵                               [32m~~~~~~~~~~~[0m
+    at failureErrorWithLog (d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:1472:15)
+    at d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:945:25
+    at runOnEndCallbacks (d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:1315:45)
+    at buildResponseToResult (d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:943:7)
+    at d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:955:9
+    at new Promise (<anonymous>)
+    at requestCallbacks.on-end (d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:954:54)
+    at handleRequest (d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:647:17)
+    at handleIncomingPacket (d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:672:7)
+    at Socket.readFromStdout (d:\code-space\coding-soler\permission-system-0d41021b\frontend\node_modules\esbuild\lib\main.js:600:7)

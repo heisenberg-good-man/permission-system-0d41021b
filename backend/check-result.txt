@@ -1,0 +1,17 @@
+=== 06/30/2026 00:15:03 ===
+
+--- Port 8080 ---
+NOT listening
+
+--- Processes ---
+
+   Id ProcessName StartTime              CPU
+   -- ----------- ---------              ---
+11208 go          2026/6/30 0:09:49 28.28125
+  880 winlogon                              
+
+
+
+
+--- EXE files ---
+
