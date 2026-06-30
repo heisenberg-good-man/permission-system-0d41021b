@@ -1,7 +1,7 @@
 <template>
   <div class="stats-page">
     <el-row :gutter="16">
-      <el-col :span="4" v-for="card in statCards" :key="card.key">
+      <el-col :span="3" v-for="card in statCards" :key="card.key">
         <el-card class="stat-card" shadow="never" :body-style="{ padding: '16px' }">
           <div class="stat-card-inner">
             <div class="stat-icon" :style="{ background: card.bg }">
@@ -96,7 +96,7 @@ import { ref, reactive, onMounted, nextTick, markRaw } from 'vue'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
 import {
-  DataAnalysis, Briefcase, User, TrendCharts, Bell, UserFilled, Calendar
+  DataAnalysis, Briefcase, User, TrendCharts, Bell, UserFilled, Calendar, Tickets, Medal
 } from '@element-plus/icons-vue'
 import { getStats, listApplications, listJobs } from '@/api'
 
@@ -113,7 +113,10 @@ const statData = reactive({
   totalCandidates: 0,
   totalInterviews: 0,
   pendingInterviews: 0,
-  newThisWeek: 0
+  newThisWeek: 0,
+  totalOffers: 0,
+  pendingOffers: 0,
+  acceptedOffers: 0
 })
 
 const statCards = [
@@ -164,6 +167,22 @@ const statCards = [
     color: '#67c23a',
     bg: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
     sub: () => '最近 7 天'
+  },
+  {
+    key: 'pendingOffers',
+    label: '待发 Offer',
+    icon: markRaw(Tickets),
+    color: '#e6a23c',
+    bg: 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+    sub: (d) => `累计 Offer ${d.totalOffers} 份`
+  },
+  {
+    key: 'acceptedOffers',
+    label: '已接受 Offer',
+    icon: markRaw(Medal),
+    color: '#67c23a',
+    bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    sub: () => '成功入职'
   }
 ]
 
@@ -276,6 +295,9 @@ const loadAll = async () => {
     statData.totalInterviews = stats.totalInterviews || 0
     statData.pendingInterviews = stats.pendingInterviews || 0
     statData.newThisWeek = stats.newThisWeek || 0
+    statData.totalOffers = stats.totalOffers || 0
+    statData.pendingOffers = stats.pendingOffers || 0
+    statData.acceptedOffers = stats.acceptedOffers || 0
 
     const apps = appsRes.data || []
     const jobs = jobsRes.data || []

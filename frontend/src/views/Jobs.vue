@@ -36,7 +36,8 @@
       <div class="card-header">
         <h3 class="card-title">职位列表 <span class="count-tip">共 {{ jobList.length }} 条</span></h3>
       </div>
-      <el-table :data="jobList" v-loading="loading" stripe style="width: 100%">
+      <el-empty v-if="!loading && jobList.length === 0" description="暂无职位数据，点击新增职位开始招聘" />
+      <el-table v-else :data="jobList" v-loading="loading" stripe style="width: 100%">
         <el-table-column prop="title" label="岗位名称" min-width="180">
           <template #default="{ row }">
             <span class="job-title" @click="showJobDetail(row)">{{ row.title }}</span>

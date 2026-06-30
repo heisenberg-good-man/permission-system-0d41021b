@@ -48,6 +48,12 @@ const routes = [
         name: 'Interviews',
         component: () => import('@/views/Interviews.vue'),
         meta: { title: '面试安排', icon: 'Calendar' }
+      },
+      {
+        path: 'offers',
+        name: 'Offers',
+        component: () => import('@/views/Offers.vue'),
+        meta: { title: 'Offer 管理', icon: 'Tickets' }
       }
     ]
   }

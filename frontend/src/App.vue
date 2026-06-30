@@ -1,8 +1,8 @@
 <template>
   <div id="app-root">
-    <ServiceDown v-if="!backendHealth.ok && !backendHealth.checking && backendHealth.lastCheck" />
+    <ServiceDown v-if="!healthState.ok && !healthState.checking && healthState.lastCheck" />
     <div v-else>
-      <div v-if="!backendHealth.ok && backendHealth.checking" class="connecting-tip">
+      <div v-if="!healthState.ok && healthState.checking" class="connecting-tip">
         <el-icon class="loading-icon"><Loading /></el-icon>
         <span>正在连接后端服务...</span>
       </div>
@@ -16,11 +16,13 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { ElNotification } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import ServiceDown from '@/components/ServiceDown.vue'
 import { backendHealth, startHealthCheck, stopHealthCheck, checkBackendHealth } from '@/api/health'
+
+const healthState = computed(() => backendHealth.value)
 
 let notifiedDown = false
 let notifiedRecovered = false
@@ -30,7 +32,7 @@ onMounted(async () => {
   if (!ok) {
     ElNotification.warning({
       title: '后端服务未就绪',
-      message: '请确认后端服务已启动并监听 8080 端口',
+      message: '请确认后端服务已启动并监听 8080 端口，可点击页面上的「重新连接」重试',
       duration: 5000,
       position: 'top-right'
     })
@@ -45,7 +47,7 @@ onMounted(async () => {
         notifiedRecovered = false
         ElNotification.error({
           title: '后端服务断开',
-          message: '请检查后端服务是否正常运行',
+          message: '请检查后端服务是否正常运行，页面已展示降级提示',
           duration: 0
         })
       }

@@ -48,6 +48,36 @@ const (
 	InterviewMethodPhone   InterviewMethod = "phone"
 )
 
+type OfferStatus string
+
+const (
+	OfferStatusPending   OfferStatus = "pending"
+	OfferStatusSent      OfferStatus = "sent"
+	OfferStatusAccepted  OfferStatus = "accepted"
+	OfferStatusRejected  OfferStatus = "rejected"
+	OfferStatusWithdrawn OfferStatus = "withdrawn"
+)
+
+type Offer struct {
+	ID              string      `json:"id"`
+	ApplicationID   string      `json:"applicationId"`
+	JobID           string      `json:"jobId"`
+	JobTitle        string      `json:"jobTitle"`
+	CandidateName   string      `json:"candidateName"`
+	Contact         string      `json:"contact"`
+	SalaryMin       int         `json:"salaryMin"`
+	SalaryMax       int         `json:"salaryMax"`
+	StartDate       string      `json:"startDate"`
+	Owner           string      `json:"owner"`
+	Description     string      `json:"description"`
+	Status          OfferStatus `json:"status"`
+	Feedback        string      `json:"feedback,omitempty"`
+	CreatedAt       string      `json:"createdAt"`
+	UpdatedAt       string      `json:"updatedAt"`
+	SentAt          string      `json:"sentAt,omitempty"`
+	RepliedAt       string      `json:"repliedAt,omitempty"`
+}
+
 type Interview struct {
 	ID              string          `json:"id"`
 	ApplicationID   string          `json:"applicationId"`
@@ -128,9 +158,13 @@ type Stats struct {
 	TotalCandidates       int            `json:"totalCandidates"`
 	TotalInterviews       int            `json:"totalInterviews"`
 	PendingInterviews     int            `json:"pendingInterviews"`
+	TotalOffers           int            `json:"totalOffers"`
+	PendingOffers         int            `json:"pendingOffers"`
+	AcceptedOffers        int            `json:"acceptedOffers"`
 	NewThisWeek           int            `json:"newThisWeek"`
 	ApplicationsByStatus  map[string]int `json:"applicationsByStatus"`
 	InterviewsByStatus    map[string]int `json:"interviewsByStatus"`
+	OffersByStatus        map[string]int `json:"offersByStatus"`
 }
 
 type ApplicationSimple struct {

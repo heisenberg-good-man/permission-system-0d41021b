@@ -17,6 +17,7 @@ var (
 	messages     []models.Message
 	notes        []models.Note
 	interviews   []models.Interview
+	offers       []models.Offer
 	mu           sync.RWMutex
 )
 
@@ -298,6 +299,25 @@ func InitMockData() {
 			Feedback:      "候选人工作经验2年，岗位要求5年以上，不符合要求",
 			CreatedAt:     now.AddDate(0, 0, -5).Format(time.RFC3339),
 			UpdatedAt:     now.AddDate(0, 0, -4).Format(time.RFC3339),
+		},
+	}
+
+	offers = []models.Offer{
+		{
+			ID:            uuid.New().String(),
+			ApplicationID: applications[0].ID,
+			JobID:         jobs[0].ID,
+			JobTitle:      jobs[0].Title,
+			CandidateName: "张三",
+			Contact:       "13800138001",
+			SalaryMin:     28000,
+			SalaryMax:     35000,
+			StartDate:     now.AddDate(0, 0, 15).Format("2006-01-02"),
+			Owner:         "招聘专员-刘经理",
+			Description:   "高级后端工程师 Offer，含年终 3 个月",
+			Status:        models.OfferStatusPending,
+			CreatedAt:     now.AddDate(0, 0, -1).Format(time.RFC3339),
+			UpdatedAt:     now.AddDate(0, 0, -1).Format(time.RFC3339),
 		},
 	}
 }
@@ -693,6 +713,7 @@ func GetStats() models.Stats {
 	stats := models.Stats{
 		ApplicationsByStatus: make(map[string]int),
 		InterviewsByStatus:   make(map[string]int),
+		OffersByStatus:       make(map[string]int),
 	}
 
 	weekAgo := time.Now().AddDate(0, 0, -7)
@@ -724,6 +745,17 @@ func GetStats() models.Stats {
 		stats.InterviewsByStatus[string(iv.Status)]++
 		if iv.Status == models.InterviewStatusScheduled {
 			stats.PendingInterviews++
+		}
+	}
+
+	for _, offer := range offers {
+		stats.TotalOffers++
+		stats.OffersByStatus[string(offer.Status)]++
+		if offer.Status == models.OfferStatusPending || offer.Status == models.OfferStatusSent {
+			stats.PendingOffers++
+		}
+		if offer.Status == models.OfferStatusAccepted {
+			stats.AcceptedOffers++
 		}
 	}
 
@@ -870,6 +902,148 @@ func AddInterviewNote(id, note string) *models.Interview {
 			interviews[i].LatestNote = note
 			interviews[i].UpdatedAt = time.Now().Format(time.RFC3339)
 			return &interviews[i]
+		}
+	}
+	return nil
+}
+
+func ListOffers(jobId, status string) []models.Offer {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	result := make([]models.Offer, 0)
+	for _, offer := range offers {
+		if jobId != "" && offer.JobID != jobId {
+			continue
+		}
+		if status != "" && string(offer.Status) != status {
+			continue
+		}
+		result = append(result, offer)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].CreatedAt > result[j].CreatedAt
+	})
+	return result
+}
+
+func GetOffer(id string) *models.Offer {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	for i := range offers {
+		if offers[i].ID == id {
+			return &offers[i]
+		}
+	}
+	return nil
+}
+
+func CreateOffer(offer *models.Offer) *models.Offer {
+	mu.Lock()
+	defer mu.Unlock()
+
+	var app *models.Application
+	for i := range applications {
+		if applications[i].ID == offer.ApplicationID {
+			app = &applications[i]
+			break
+		}
+	}
+	if app == nil {
+		return nil
+	}
+
+	offer.ID = uuid.New().String()
+	offer.JobID = app.JobID
+	offer.JobTitle = app.JobTitle
+	offer.CandidateName = app.Resume.CandidateName
+	offer.Contact = app.Resume.Contact
+	offer.Status = models.OfferStatusPending
+	now := time.Now().Format(time.RFC3339)
+	offer.CreatedAt = now
+	offer.UpdatedAt = now
+
+	offers = append(offers, *offer)
+	return &offers[len(offers)-1]
+}
+
+func SendOffer(id string) *models.Offer {
+	mu.Lock()
+	defer mu.Unlock()
+
+	now := time.Now().Format(time.RFC3339)
+	for i := range offers {
+		if offers[i].ID == id {
+			offers[i].Status = models.OfferStatusSent
+			offers[i].SentAt = now
+			offers[i].UpdatedAt = now
+			return &offers[i]
+		}
+	}
+	return nil
+}
+
+type OfferReplyRequest struct {
+	Accepted bool
+	Feedback string
+}
+
+func ReplyOffer(id string, req OfferReplyRequest) *models.Offer {
+	mu.Lock()
+	defer mu.Unlock()
+
+	now := time.Now().Format(time.RFC3339)
+	for i := range offers {
+		if offers[i].ID == id {
+			if req.Accepted {
+				offers[i].Status = models.OfferStatusAccepted
+			} else {
+				offers[i].Status = models.OfferStatusRejected
+			}
+			offers[i].Feedback = req.Feedback
+			offers[i].RepliedAt = now
+			offers[i].UpdatedAt = now
+
+			for j := range applications {
+				if applications[j].ID == offers[i].ApplicationID {
+					if req.Accepted {
+						applications[j].Status = models.AppStatusHired
+					}
+					break
+				}
+			}
+			return &offers[i]
+		}
+	}
+	return nil
+}
+
+func WithdrawOffer(id, reason string) *models.Offer {
+	mu.Lock()
+	defer mu.Unlock()
+
+	now := time.Now().Format(time.RFC3339)
+	for i := range offers {
+		if offers[i].ID == id {
+			offers[i].Status = models.OfferStatusWithdrawn
+			offers[i].Feedback = reason
+			offers[i].UpdatedAt = now
+			return &offers[i]
+		}
+	}
+	return nil
+}
+
+func UpdateOfferNote(id, note string) *models.Offer {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range offers {
+		if offers[i].ID == id {
+			offers[i].Description = note
+			offers[i].UpdatedAt = time.Now().Format(time.RFC3339)
+			return &offers[i]
 		}
 	}
 	return nil

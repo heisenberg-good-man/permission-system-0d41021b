@@ -60,7 +60,8 @@
       <div class="card-header">
         <h3 class="card-title">面试安排 <span class="count-tip">共 {{ interviewList.length }} 条</span></h3>
       </div>
-      <el-table :data="interviewList" v-loading="loading" stripe style="width: 100%">
+      <el-empty v-if="!loading && interviewList.length === 0" description="暂无面试安排" />
+      <el-table v-else :data="interviewList" v-loading="loading" stripe style="width: 100%">
         <el-table-column label="候选人" min-width="130">
           <template #default="{ row }">
             <div class="candidate-info">

@@ -56,6 +56,21 @@
       </div>
     </div>
 
+    <div class="action-section" v-if="interview.status === 'completed'">
+      <el-divider content-position="left">后续操作</el-divider>
+      <div class="action-buttons">
+        <el-button type="primary" :icon="Promotion" @click="openOfferDialog">发起 Offer</el-button>
+      </div>
+    </div>
+
+    <OfferDialog
+      v-model="offerVisible"
+      :applications="offerApplications"
+      :candidate-name="interview.candidateName"
+      :pre-select-application-id="interview.applicationId"
+      @success="handleOfferSuccess"
+    />
+
     <el-divider content-position="left">补充备注</el-divider>
     <div class="note-section">
       <el-input
@@ -119,11 +134,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Phone, Briefcase, Calendar, Clock, CloseBold, Check, ChatDotRound } from '@element-plus/icons-vue'
+import { Phone, Briefcase, Calendar, Clock, CloseBold, Check, ChatDotRound, Promotion } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
-import { rescheduleInterview, cancelInterview, completeInterview, addInterviewNote } from '@/api'
+import { rescheduleInterview, cancelInterview, completeInterview, addInterviewNote, getApplication } from '@/api'
+import OfferDialog from './OfferDialog.vue'
 
 const props = defineProps({
   interview: { type: Object, required: true }
@@ -234,6 +250,28 @@ const confirmComplete = async () => {
   } finally {
     submitting.value = false
   }
+}
+
+const offerVisible = ref(false)
+const offerApplications = ref([])
+const loadOfferApplications = async () => {
+  if (!props.interview.applicationId) return
+  try {
+    const res = await getApplication(props.interview.applicationId)
+    if (res?.data) {
+      offerApplications.value = [res.data]
+    }
+  } catch (e) {
+    console.error('加载申请失败:', e)
+  }
+}
+const openOfferDialog = () => {
+  loadOfferApplications()
+  offerVisible.value = true
+}
+const handleOfferSuccess = () => {
+  ElMessage.success('Offer 已创建')
+  emit('updated')
 }
 </script>
 

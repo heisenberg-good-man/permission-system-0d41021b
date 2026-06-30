@@ -91,3 +91,31 @@ export const completeInterview = (id, data) => {
 export const addInterviewNote = (id, data) => {
   return request.put(`/interviews/${id}/note`, data)
 }
+
+export const listOffers = (params) => {
+  return request.get('/offers', { params })
+}
+
+export const getOffer = (id) => {
+  return request.get(`/offers/${id}`)
+}
+
+export const createOffer = (data) => {
+  return request.post('/offers', data)
+}
+
+export const sendOffer = (id) => {
+  return request.put(`/offers/${id}/send`)
+}
+
+export const replyOffer = (id, data) => {
+  return request.put(`/offers/${id}/reply`, data)
+}
+
+export const withdrawOffer = (id, data) => {
+  return request.put(`/offers/${id}/withdraw`, data)
+}
+
+export const updateOfferNote = (id, data) => {
+  return request.put(`/offers/${id}/note`, data)
+}

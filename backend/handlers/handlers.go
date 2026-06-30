@@ -460,3 +460,122 @@ func AddInterviewNote(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"data": updated})
 }
+
+func ListOffers(c *gin.Context) {
+	jobId := c.Query("jobId")
+	status := c.Query("status")
+	offers := store.ListOffers(jobId, status)
+	c.JSON(http.StatusOK, gin.H{"data": offers})
+}
+
+func GetOffer(c *gin.Context) {
+	id := c.Param("id")
+	offer := store.GetOffer(id)
+	if offer == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Offer 不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": offer})
+}
+
+type createOfferRequest struct {
+	ApplicationID string `json:"applicationId" binding:"required"`
+	SalaryMin     int    `json:"salaryMin" binding:"required,min=0"`
+	SalaryMax     int    `json:"salaryMax" binding:"required,min=0"`
+	StartDate     string `json:"startDate" binding:"required"`
+	Owner         string `json:"owner"`
+	Description   string `json:"description"`
+}
+
+func CreateOffer(c *gin.Context) {
+	var req createOfferRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.SalaryMax < req.SalaryMin {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "最高薪资不能低于最低薪资"})
+		return
+	}
+	offer := store.CreateOffer(&models.Offer{
+		ApplicationID: req.ApplicationID,
+		SalaryMin:     req.SalaryMin,
+		SalaryMax:     req.SalaryMax,
+		StartDate:     req.StartDate,
+		Owner:         req.Owner,
+		Description:   req.Description,
+	})
+	if offer == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "申请不存在，无法创建 Offer"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": offer})
+}
+
+func SendOffer(c *gin.Context) {
+	id := c.Param("id")
+	updated := store.SendOffer(id)
+	if updated == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Offer 不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": updated})
+}
+
+type replyOfferRequest struct {
+	Accepted bool   `json:"accepted" binding:"required"`
+	Feedback string `json:"feedback"`
+}
+
+func ReplyOffer(c *gin.Context) {
+	id := c.Param("id")
+	var req replyOfferRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	updated := store.ReplyOffer(id, store.OfferReplyRequest{
+		Accepted: req.Accepted,
+		Feedback: req.Feedback,
+	})
+	if updated == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Offer 不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": updated})
+}
+
+type withdrawOfferRequest struct {
+	Reason string `json:"reason"`
+}
+
+func WithdrawOffer(c *gin.Context) {
+	id := c.Param("id")
+	var req withdrawOfferRequest
+	c.ShouldBindJSON(&req)
+	updated := store.WithdrawOffer(id, req.Reason)
+	if updated == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Offer 不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": updated})
+}
+
+type updateOfferNoteRequest struct {
+	Note string `json:"note" binding:"required"`
+}
+
+func UpdateOfferNote(c *gin.Context) {
+	id := c.Param("id")
+	var req updateOfferNoteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	updated := store.UpdateOfferNote(id, req.Note)
+	if updated == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Offer 不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": updated})
+}

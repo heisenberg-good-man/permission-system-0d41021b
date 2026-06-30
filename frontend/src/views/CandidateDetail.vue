@@ -81,6 +81,9 @@
               <el-button type="warning" @click="openInterviewDialog" :icon="Calendar">
                 安排面试
               </el-button>
+              <el-button type="primary" @click="openOfferDialog" :icon="Promotion">
+                发起 Offer
+              </el-button>
             </div>
           </div>
         </el-card>
@@ -260,6 +263,13 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <OfferDialog
+      v-model="offerVisible"
+      :applications="candidate?.applications || []"
+      :candidate-name="candidate?.candidateName || ''"
+      @success="loadCandidate"
+    />
   </div>
 </template>
 
@@ -267,9 +277,10 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Phone, Briefcase, ChatDotRound, Plus, Calendar } from '@element-plus/icons-vue'
+import { ArrowLeft, Phone, Briefcase, ChatDotRound, Plus, Calendar, Promotion } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import { getCandidate, updateCandidateStatus, createNote, createInterview } from '@/api'
+import OfferDialog from './OfferDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -434,6 +445,15 @@ const submitInterview = async () => {
   } finally {
     submittingInterview.value = false
   }
+}
+
+const offerVisible = ref(false)
+const openOfferDialog = () => {
+  if (!candidate.value || candidate.value.applications.length === 0) {
+    ElMessage.warning('该候选人暂无有效投递申请')
+    return
+  }
+  offerVisible.value = true
 }
 
 onMounted(() => {

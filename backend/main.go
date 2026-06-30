@@ -80,6 +80,17 @@ func main() {
 			interviews.PUT("/:id/complete", handlers.CompleteInterview)
 			interviews.PUT("/:id/note", handlers.AddInterviewNote)
 		}
+
+		offers := api.Group("/offers")
+		{
+			offers.GET("", handlers.ListOffers)
+			offers.GET("/:id", handlers.GetOffer)
+			offers.POST("", handlers.CreateOffer)
+			offers.PUT("/:id/send", handlers.SendOffer)
+			offers.PUT("/:id/reply", handlers.ReplyOffer)
+			offers.PUT("/:id/withdraw", handlers.WithdrawOffer)
+			offers.PUT("/:id/note", handlers.UpdateOfferNote)
+		}
 	}
 
 	log.Println("Server starting on :8080")
