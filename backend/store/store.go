@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -18,8 +19,15 @@ var (
 	notes        []models.Note
 	interviews   []models.Interview
 	offers       []models.Offer
+	requirements []models.HiringRequirement
+	reqSeqNo     int
 	mu           sync.RWMutex
 )
+
+func genReqNo() string {
+	reqSeqNo++
+	return fmt.Sprintf("REQ-%04d", reqSeqNo)
+}
 
 func InitMockData() {
 	mu.Lock()
@@ -27,71 +35,259 @@ func InitMockData() {
 
 	now := time.Now()
 
+	reqSeqNo = 0
+
+	requirements = []models.HiringRequirement{
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            genReqNo(),
+			Department:       "技术部",
+			JobTitle:         "高级后端开发工程师",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        3,
+			ExpectedOnboard:  now.AddDate(0, 0, 20).Format("2006-01-02"),
+			SalaryMin:        25000,
+			SalaryMax:        45000,
+			WorkLocation:     "北京",
+			JobDescription:   "负责公司核心业务系统的后端架构设计与开发",
+			Requirements:     "5年以上Go/Java开发经验，熟悉微服务架构",
+			Reason:           "业务扩张",
+			Status:           models.ReqStatusApproved,
+			Initiator:        "张总监",
+			InitiatorContact: "13800000001",
+			ApprovalNodes:    nil,
+			OperationLogs:    nil,
+			CreatedAt:        now.AddDate(0, 0, -30).Format(time.RFC3339),
+			UpdatedAt:        now.AddDate(0, 0, -25).Format(time.RFC3339),
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            genReqNo(),
+			Department:       "技术部",
+			JobTitle:         "前端开发工程师",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        2,
+			ExpectedOnboard:  now.AddDate(0, 0, 15).Format("2006-01-02"),
+			SalaryMin:        20000,
+			SalaryMax:        35000,
+			WorkLocation:     "上海",
+			JobDescription:   "负责公司产品的前端开发与优化",
+			Requirements:     "3年以上Vue/React开发经验",
+			Reason:           "新项目启动",
+			Status:           models.ReqStatusPending,
+			Initiator:        "李经理",
+			InitiatorContact: "13800000002",
+			ApprovalNodes:    nil,
+			OperationLogs:    nil,
+			CreatedAt:        now.AddDate(0, 0, -8).Format(time.RFC3339),
+			UpdatedAt:        now.AddDate(0, 0, -8).Format(time.RFC3339),
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            genReqNo(),
+			Department:       "产品部",
+			JobTitle:         "产品经理",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        1,
+			ExpectedOnboard:  now.AddDate(0, 0, 10).Format("2006-01-02"),
+			SalaryMin:        22000,
+			SalaryMax:        40000,
+			WorkLocation:     "深圳",
+			JobDescription:   "负责B端产品的需求分析与迭代规划",
+			Requirements:     "3年以上B端产品经验，有SaaS经验优先",
+			Reason:           "产品线扩张",
+			Status:           models.ReqStatusReturned,
+			Initiator:        "王主管",
+			InitiatorContact: "13800000003",
+			ApprovalNodes:    nil,
+			OperationLogs:    nil,
+			LatestOpinion:    "请补充岗位KPI指标",
+			CreatedAt:        now.AddDate(0, 0, -12).Format(time.RFC3339),
+			UpdatedAt:        now.AddDate(0, 0, -5).Format(time.RFC3339),
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            genReqNo(),
+			Department:       "设计部",
+			JobTitle:         "UI设计师",
+			HeadcountType:    models.HeadcountContract,
+			Headcount:        1,
+			ExpectedOnboard:  now.AddDate(0, 0, 5).Format("2006-01-02"),
+			SalaryMin:        15000,
+			SalaryMax:        28000,
+			WorkLocation:     "北京",
+			JobDescription:   "负责产品界面设计与用户体验优化",
+			Requirements:     "2年以上UI设计经验，熟练使用Figma",
+			Reason:           "外包项目需求",
+			Status:           models.ReqStatusRejected,
+			Initiator:        "陈设计",
+			InitiatorContact: "13800000004",
+			ApprovalNodes:    nil,
+			OperationLogs:    nil,
+			LatestOpinion:    "预算不足，暂不审批",
+			CreatedAt:        now.AddDate(0, 0, -20).Format(time.RFC3339),
+			UpdatedAt:        now.AddDate(0, 0, -15).Format(time.RFC3339),
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            genReqNo(),
+			Department:       "数据部",
+			JobTitle:         "数据分析师",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        2,
+			ExpectedOnboard:  now.AddDate(0, 0, 3).Format("2006-01-02"),
+			SalaryMin:        18000,
+			SalaryMax:        32000,
+			WorkLocation:     "杭州",
+			JobDescription:   "负责业务数据分析与报表输出",
+			Requirements:     "3年以上数据分析经验，熟练SQL/Python",
+			Reason:           "数据团队扩充",
+			Status:           models.ReqStatusConverted,
+			Initiator:        "刘数据",
+			InitiatorContact: "13800000005",
+			ApprovalNodes:    nil,
+			OperationLogs:    nil,
+			CreatedAt:        now.AddDate(0, 0, -40).Format(time.RFC3339),
+			UpdatedAt:        now.AddDate(0, 0, -14).Format(time.RFC3339),
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            genReqNo(),
+			Department:       "技术部",
+			JobTitle:         "测试工程师",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        2,
+			ExpectedOnboard:  now.AddDate(0, 0, 7).Format("2006-01-02"),
+			SalaryMin:        18000,
+			SalaryMax:        30000,
+			WorkLocation:     "北京",
+			JobDescription:   "负责产品功能测试与自动化测试",
+			Requirements:     "3年以上测试经验，熟悉自动化测试框架",
+			Reason:           "质量保障体系建设",
+			Status:           models.ReqStatusPending,
+			Initiator:        "赵测试",
+			InitiatorContact: "13800000006",
+			ApprovalNodes:    nil,
+			OperationLogs:    nil,
+			CreatedAt:        now.AddDate(0, 0, -3).Format(time.RFC3339),
+			UpdatedAt:        now.AddDate(0, 0, -3).Format(time.RFC3339),
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            genReqNo(),
+			Department:       "运营部",
+			JobTitle:         "运营专员",
+			HeadcountType:    models.HeadcountIntern,
+			Headcount:        3,
+			ExpectedOnboard:  now.AddDate(0, 0, 4).Format("2006-01-02"),
+			SalaryMin:        8000,
+			SalaryMax:        12000,
+			WorkLocation:     "广州",
+			JobDescription:   "负责日常运营活动策划与执行",
+			Requirements:     "有运营实习经验优先，应届生也可",
+			Reason:           "暑期实习生",
+			Status:           models.ReqStatusApproved,
+			Initiator:        "孙运营",
+			InitiatorContact: "13800000007",
+			ApprovalNodes:    nil,
+			OperationLogs:    nil,
+			CreatedAt:        now.AddDate(0, 0, -10).Format(time.RFC3339),
+			UpdatedAt:        now.AddDate(0, 0, -8).Format(time.RFC3339),
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            genReqNo(),
+			Department:       "人事部",
+			JobTitle:         "HRBP",
+			HeadcountType:    models.HeadcountReplacement,
+			Headcount:        1,
+			ExpectedOnboard:  now.AddDate(0, 0, 18).Format("2006-01-02"),
+			SalaryMin:        20000,
+			SalaryMax:        35000,
+			WorkLocation:     "北京",
+			JobDescription:   "负责技术部门HRBP工作",
+			Requirements:     "5年以上HRBP经验，有互联网公司背景优先",
+			Reason:           "人员替换",
+			Status:           models.ReqStatusDraft,
+			Initiator:        "周HR",
+			InitiatorContact: "13800000008",
+			ApprovalNodes:    nil,
+			OperationLogs:    nil,
+			CreatedAt:        now.AddDate(0, 0, -2).Format(time.RFC3339),
+			UpdatedAt:        now.AddDate(0, 0, -2).Format(time.RFC3339),
+		},
+	}
+
 	jobs = []models.Job{
 		{
-			ID:           uuid.New().String(),
-			Title:        "高级后端开发工程师",
-			Department:   "技术部",
-			Location:     "北京",
-			SalaryMin:    25000,
-			SalaryMax:    45000,
-			Status:       models.JobStatusOpen,
-			Headcount:    3,
-			PublishedAt:  now.AddDate(0, 0, -7).Format("2006-01-02"),
-			Description:  "负责公司核心业务系统的后端架构设计与开发",
-			Requirements: "5年以上Go/Java开发经验，熟悉微服务架构",
+			ID:            uuid.New().String(),
+			Title:         "高级后端开发工程师",
+			Department:    "技术部",
+			Location:      "北京",
+			SalaryMin:     25000,
+			SalaryMax:     45000,
+			Status:        models.JobStatusOpen,
+			Headcount:     3,
+			PublishedAt:   now.AddDate(0, 0, -7).Format("2006-01-02"),
+			Description:   "负责公司核心业务系统的后端架构设计与开发",
+			Requirements:  "5年以上Go/Java开发经验，熟悉微服务架构",
+			RequirementId: requirements[0].ID,
 		},
 		{
-			ID:           uuid.New().String(),
-			Title:        "前端开发工程师",
-			Department:   "技术部",
-			Location:     "上海",
-			SalaryMin:    20000,
-			SalaryMax:    35000,
-			Status:       models.JobStatusOpen,
-			Headcount:    2,
-			PublishedAt:  now.AddDate(0, 0, -5).Format("2006-01-02"),
-			Description:  "负责公司产品的前端开发与优化",
-			Requirements: "3年以上Vue/React开发经验",
+			ID:            uuid.New().String(),
+			Title:         "前端开发工程师",
+			Department:    "技术部",
+			Location:      "上海",
+			SalaryMin:     20000,
+			SalaryMax:     35000,
+			Status:        models.JobStatusOpen,
+			Headcount:     2,
+			PublishedAt:   now.AddDate(0, 0, -5).Format("2006-01-02"),
+			Description:   "负责公司产品的前端开发与优化",
+			Requirements:  "3年以上Vue/React开发经验",
+			RequirementId: requirements[1].ID,
 		},
 		{
-			ID:           uuid.New().String(),
-			Title:        "产品经理",
-			Department:   "产品部",
-			Location:     "深圳",
-			SalaryMin:    22000,
-			SalaryMax:    40000,
-			Status:       models.JobStatusOpen,
-			Headcount:    1,
-			PublishedAt:  now.AddDate(0, 0, -3).Format("2006-01-02"),
-			Description:  "负责B端产品的需求分析与迭代规划",
-			Requirements: "3年以上B端产品经验，有SaaS经验优先",
+			ID:            uuid.New().String(),
+			Title:         "产品经理",
+			Department:    "产品部",
+			Location:      "深圳",
+			SalaryMin:     22000,
+			SalaryMax:     40000,
+			Status:        models.JobStatusOpen,
+			Headcount:     1,
+			PublishedAt:   now.AddDate(0, 0, -3).Format("2006-01-02"),
+			Description:   "负责B端产品的需求分析与迭代规划",
+			Requirements:  "3年以上B端产品经验，有SaaS经验优先",
+			RequirementId: requirements[2].ID,
 		},
 		{
-			ID:           uuid.New().String(),
-			Title:        "UI设计师",
-			Department:   "设计部",
-			Location:     "北京",
-			SalaryMin:    15000,
-			SalaryMax:    28000,
-			Status:       models.JobStatusPaused,
-			Headcount:    1,
-			PublishedAt:  now.AddDate(0, 0, -10).Format("2006-01-02"),
-			Description:  "负责产品界面设计与用户体验优化",
-			Requirements: "2年以上UI设计经验，熟练使用Figma",
+			ID:            uuid.New().String(),
+			Title:         "UI设计师",
+			Department:    "设计部",
+			Location:      "北京",
+			SalaryMin:     15000,
+			SalaryMax:     28000,
+			Status:        models.JobStatusPaused,
+			Headcount:     1,
+			PublishedAt:   now.AddDate(0, 0, -10).Format("2006-01-02"),
+			Description:   "负责产品界面设计与用户体验优化",
+			Requirements:  "2年以上UI设计经验，熟练使用Figma",
+			RequirementId: requirements[3].ID,
 		},
 		{
-			ID:           uuid.New().String(),
-			Title:        "数据分析师",
-			Department:   "数据部",
-			Location:     "杭州",
-			SalaryMin:    18000,
-			SalaryMax:    32000,
-			Status:       models.JobStatusClosed,
-			Headcount:    2,
-			PublishedAt:  now.AddDate(0, 0, -14).Format("2006-01-02"),
-			Description:  "负责业务数据分析与报表输出",
-			Requirements: "3年以上数据分析经验，熟练SQL/Python",
+			ID:            uuid.New().String(),
+			Title:         "数据分析师",
+			Department:    "数据部",
+			Location:      "杭州",
+			SalaryMin:     18000,
+			SalaryMax:     32000,
+			Status:        models.JobStatusClosed,
+			Headcount:     2,
+			PublishedAt:   now.AddDate(0, 0, -14).Format("2006-01-02"),
+			Description:   "负责业务数据分析与报表输出",
+			Requirements:  "3年以上数据分析经验，熟练SQL/Python",
+			RequirementId: requirements[4].ID,
 		},
 	}
 
@@ -318,6 +514,415 @@ func InitMockData() {
 			Status:        models.OfferStatusPending,
 			CreatedAt:     now.AddDate(0, 0, -1).Format(time.RFC3339),
 			UpdatedAt:     now.AddDate(0, 0, -1).Format(time.RFC3339),
+		},
+	}
+
+	yearMonth := now.Format("200601")
+	reqSeqNo = 0
+	generateReqNo := func() string {
+		reqSeqNo++
+		return fmt.Sprintf("REQ-%s-%04d", yearMonth, reqSeqNo)
+	}
+
+	nowStr := now.Format(time.RFC3339)
+	sevenDaysAgo := now.AddDate(0, 0, -7).Format(time.RFC3339)
+	fiveDaysAgo := now.AddDate(0, 0, -5).Format(time.RFC3339)
+	fourDaysAgo := now.AddDate(0, 0, -4).Format(time.RFC3339)
+	threeDaysAgo := now.AddDate(0, 0, -3).Format(time.RFC3339)
+	twoDaysAgo := now.AddDate(0, 0, -2).Format(time.RFC3339)
+	oneDayAgo := now.AddDate(0, 0, -1).Format(time.RFC3339)
+
+	tenDaysLater := now.AddDate(0, 0, 10).Format("2006-01-02")
+	twentyDaysLater := now.AddDate(0, 0, 20).Format("2006-01-02")
+	thirtyDaysLater := now.AddDate(0, 0, 30).Format("2006-01-02")
+	fortyFiveDaysLater := now.AddDate(0, 0, 45).Format("2006-01-02")
+	sevenDaysLater := now.AddDate(0, 0, 7).Format("2006-01-02")
+	fifteenDaysLater := now.AddDate(0, 0, 15).Format("2006-01-02")
+
+	approvedNodes := []models.RequirementApprovalNode{
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "部门总监审核",
+			Approver:  "技术总监-王工",
+			Status:    models.ReqStatusApproved,
+			Opinion:   "业务发展需要，同意招聘",
+			HandledAt: fiveDaysAgo,
+			CreatedAt: sevenDaysAgo,
+		},
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "招聘负责人审核",
+			Approver:  "招聘经理-李总",
+			Status:    models.ReqStatusApproved,
+			Opinion:   "编制内，同意启动招聘",
+			HandledAt: threeDaysAgo,
+			CreatedAt: sevenDaysAgo,
+		},
+	}
+
+	pendingNodes := []models.RequirementApprovalNode{
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "部门总监审核",
+			Approver:  "产品总监-陈总",
+			Status:    models.ReqStatusApproved,
+			Opinion:   "团队扩张需要，同意",
+			HandledAt: twoDaysAgo,
+			CreatedAt: threeDaysAgo,
+		},
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "招聘负责人审核",
+			Approver:  "招聘经理-李总",
+			Status:    models.ReqStatusPending,
+			CreatedAt: threeDaysAgo,
+		},
+	}
+
+	returnedNodes := []models.RequirementApprovalNode{
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "部门总监审核",
+			Approver:  "设计总监-周总",
+			Status:    models.ReqStatusReturned,
+			Opinion:   "请补充岗位详细职责和任职要求",
+			HandledAt: oneDayAgo,
+			CreatedAt: twoDaysAgo,
+		},
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "招聘负责人审核",
+			Approver:  "招聘经理-李总",
+			Status:    models.ReqStatusDraft,
+			CreatedAt: twoDaysAgo,
+		},
+	}
+
+	rejectedNodes := []models.RequirementApprovalNode{
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "部门总监审核",
+			Approver:  "市场总监-孙总",
+			Status:    models.ReqStatusApproved,
+			Opinion:   "同意",
+			HandledAt: fiveDaysAgo,
+			CreatedAt: sevenDaysAgo,
+		},
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "招聘负责人审核",
+			Approver:  "招聘经理-李总",
+			Status:    models.ReqStatusRejected,
+			Opinion:   "当前季度编制已满，建议下个季度再申请",
+			HandledAt: threeDaysAgo,
+			CreatedAt: sevenDaysAgo,
+		},
+	}
+
+	convertedNodes := []models.RequirementApprovalNode{
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "部门总监审核",
+			Approver:  "运营总监-吴总",
+			Status:    models.ReqStatusApproved,
+			Opinion:   "急需人手，同意",
+			HandledAt: fiveDaysAgo,
+			CreatedAt: sevenDaysAgo,
+		},
+		{
+			ID:        uuid.New().String(),
+			NodeName:  "招聘负责人审核",
+			Approver:  "招聘经理-李总",
+			Status:    models.ReqStatusApproved,
+			Opinion:   "同意，尽快发布",
+			HandledAt: fourDaysAgo,
+			CreatedAt: sevenDaysAgo,
+		},
+	}
+
+	requirements = []models.HiringRequirement{
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            generateReqNo(),
+			Department:       "技术部",
+			JobTitle:         "资深Go开发工程师",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        2,
+			ExpectedOnboard:  tenDaysLater,
+			SalaryMin:        30000,
+			SalaryMax:        50000,
+			WorkLocation:     "北京",
+			JobDescription:   "负责核心支付系统的设计与开发，参与架构优化",
+			Requirements:     "5年以上Go开发经验，有分布式系统、高并发经验",
+			Reason:           "支付业务线扩张，现有人员不足",
+			Status:           models.ReqStatusDraft,
+			Initiator:        "技术经理-赵工",
+			InitiatorContact: "13900139001",
+			ApprovalNodes:    nil,
+			OperationLogs: []models.RequirementOperationLog{
+				{
+					ID:        uuid.New().String(),
+					Action:    "创建",
+					Operator:  "技术经理-赵工",
+					Detail:    "创建用人需求草稿",
+					CreatedAt: nowStr,
+				},
+			},
+			CreatedAt: nowStr,
+			UpdatedAt: nowStr,
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            generateReqNo(),
+			Department:       "产品部",
+			JobTitle:         "高级产品经理",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        1,
+			ExpectedOnboard:  twentyDaysLater,
+			SalaryMin:        25000,
+			SalaryMax:        45000,
+			WorkLocation:     "深圳",
+			JobDescription:   "负责C端产品线的规划与迭代，推动产品落地",
+			Requirements:     "5年以上C端产品经验，有电商/社交产品经验优先",
+			Reason:           "新产品线立项",
+			Status:           models.ReqStatusPending,
+			Initiator:        "产品经理-林经理",
+			InitiatorContact: "13900139002",
+			ApprovalNodes:    pendingNodes,
+			OperationLogs: []models.RequirementOperationLog{
+				{
+					ID:        uuid.New().String(),
+					Action:    "创建",
+					Operator:  "产品经理-林经理",
+					Detail:    "创建用人需求",
+					CreatedAt: threeDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "提交审批",
+					Operator:  "产品经理-林经理",
+					Detail:    "提交部门总监和招聘负责人审批",
+					CreatedAt: threeDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "通过",
+					Operator:  "产品总监-陈总",
+					Detail:    "部门总监审核通过",
+					CreatedAt: twoDaysAgo,
+				},
+			},
+			LatestOpinion: "等待招聘负责人审核",
+			CreatedAt:     threeDaysAgo,
+			UpdatedAt:     twoDaysAgo,
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            generateReqNo(),
+			Department:       "技术部",
+			JobTitle:         "数据平台架构师",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        1,
+			ExpectedOnboard:  thirtyDaysLater,
+			SalaryMin:        40000,
+			SalaryMax:        65000,
+			WorkLocation:     "杭州",
+			JobDescription:   "负责大数据平台整体架构设计，带领团队完成技术攻关",
+			Requirements:     "8年以上经验，精通Hadoop/Spark/Flink，有PB级数据处理经验",
+			Reason:           "数据平台升级改造",
+			Status:           models.ReqStatusApproved,
+			Initiator:        "数据负责人-郑工",
+			InitiatorContact: "13900139003",
+			ApprovalNodes:    approvedNodes,
+			OperationLogs: []models.RequirementOperationLog{
+				{
+					ID:        uuid.New().String(),
+					Action:    "创建",
+					Operator:  "数据负责人-郑工",
+					Detail:    "创建用人需求",
+					CreatedAt: sevenDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "提交审批",
+					Operator:  "数据负责人-郑工",
+					Detail:    "提交部门总监和招聘负责人审批",
+					CreatedAt: sevenDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "通过",
+					Operator:  "技术总监-王工",
+					Detail:    "部门总监审核通过",
+					CreatedAt: fiveDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "通过",
+					Operator:  "招聘经理-李总",
+					Detail:    "招聘负责人审核通过",
+					CreatedAt: threeDaysAgo,
+				},
+			},
+			LatestOpinion: "审批通过，等待发布职位",
+			CreatedAt:     sevenDaysAgo,
+			UpdatedAt:     threeDaysAgo,
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            generateReqNo(),
+			Department:       "设计部",
+			JobTitle:         "资深视觉设计师",
+			HeadcountType:    models.HeadcountRegular,
+			Headcount:        1,
+			ExpectedOnboard:  fortyFiveDaysLater,
+			SalaryMin:        20000,
+			SalaryMax:        35000,
+			WorkLocation:     "北京",
+			JobDescription:   "负责品牌视觉设计，参与活动页面设计",
+			Requirements:     "待补充",
+			Status:           models.ReqStatusReturned,
+			Initiator:        "设计师-黄工",
+			InitiatorContact: "13900139004",
+			ApprovalNodes:    returnedNodes,
+			OperationLogs: []models.RequirementOperationLog{
+				{
+					ID:        uuid.New().String(),
+					Action:    "创建",
+					Operator:  "设计师-黄工",
+					Detail:    "创建用人需求",
+					CreatedAt: twoDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "提交审批",
+					Operator:  "设计师-黄工",
+					Detail:    "提交部门总监和招聘负责人审批",
+					CreatedAt: twoDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "退回",
+					Operator:  "设计总监-周总",
+					Detail:    "请补充岗位详细职责和任职要求",
+					CreatedAt: oneDayAgo,
+				},
+			},
+			LatestOpinion: "请补充岗位详细职责和任职要求",
+			CreatedAt:     twoDaysAgo,
+			UpdatedAt:     oneDayAgo,
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            generateReqNo(),
+			Department:       "市场部",
+			JobTitle:         "市场推广专员",
+			HeadcountType:    models.HeadcountContract,
+			Headcount:        3,
+			ExpectedOnboard:  sevenDaysLater,
+			SalaryMin:        8000,
+			SalaryMax:        15000,
+			WorkLocation:     "上海",
+			JobDescription:   "负责线上线下推广活动执行",
+			Requirements:     "1年以上市场推广经验",
+			Reason:           "618大促活动需要临时人员",
+			Status:           models.ReqStatusRejected,
+			Initiator:        "市场经理-徐经理",
+			InitiatorContact: "13900139005",
+			ApprovalNodes:    rejectedNodes,
+			OperationLogs: []models.RequirementOperationLog{
+				{
+					ID:        uuid.New().String(),
+					Action:    "创建",
+					Operator:  "市场经理-徐经理",
+					Detail:    "创建用人需求",
+					CreatedAt: sevenDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "提交审批",
+					Operator:  "市场经理-徐经理",
+					Detail:    "提交部门总监和招聘负责人审批",
+					CreatedAt: sevenDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "通过",
+					Operator:  "市场总监-孙总",
+					Detail:    "部门总监审核通过",
+					CreatedAt: fiveDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "拒绝",
+					Operator:  "招聘经理-李总",
+					Detail:    "当前季度编制已满，建议下个季度再申请",
+					CreatedAt: threeDaysAgo,
+				},
+			},
+			LatestOpinion: "当前季度编制已满，建议下个季度再申请",
+			CreatedAt:     sevenDaysAgo,
+			UpdatedAt:     threeDaysAgo,
+		},
+		{
+			ID:               uuid.New().String(),
+			ReqNo:            generateReqNo(),
+			Department:       "运营部",
+			JobTitle:         "用户运营主管",
+			HeadcountType:    models.HeadcountReplacement,
+			Headcount:        1,
+			ExpectedOnboard:  fifteenDaysLater,
+			SalaryMin:        18000,
+			SalaryMax:        30000,
+			WorkLocation:     "广州",
+			JobDescription:   "负责用户增长体系搭建，提升用户活跃度和留存率",
+			Requirements:     "3年以上用户运营经验，有数据驱动增长经验",
+			Reason:           "原运营主管离职，需补位",
+			Status:           models.ReqStatusConverted,
+			Initiator:        "运营经理-何经理",
+			InitiatorContact: "13900139006",
+			ApprovalNodes:    convertedNodes,
+			RelatedJobID:     jobs[0].ID,
+			OperationLogs: []models.RequirementOperationLog{
+				{
+					ID:        uuid.New().String(),
+					Action:    "创建",
+					Operator:  "运营经理-何经理",
+					Detail:    "创建用人需求",
+					CreatedAt: sevenDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "提交审批",
+					Operator:  "运营经理-何经理",
+					Detail:    "提交部门总监和招聘负责人审批",
+					CreatedAt: sevenDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "通过",
+					Operator:  "运营总监-吴总",
+					Detail:    "部门总监审核通过",
+					CreatedAt: fiveDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "通过",
+					Operator:  "招聘经理-李总",
+					Detail:    "招聘负责人审核通过",
+					CreatedAt: fourDaysAgo,
+				},
+				{
+					ID:        uuid.New().String(),
+					Action:    "转职位",
+					Operator:  "招聘专员-刘经理",
+					Detail:    "已生成招聘职位",
+					CreatedAt: threeDaysAgo,
+				},
+			},
+			LatestOpinion: "已生成招聘职位",
+			CreatedAt:     sevenDaysAgo,
+			UpdatedAt:     threeDaysAgo,
 		},
 	}
 }
@@ -759,6 +1364,46 @@ func GetStats() models.Stats {
 		}
 	}
 
+	reqStats := models.RequirementStats{
+		ByDepartment: make(map[string]int),
+		ByMonth:      make(map[string]int),
+	}
+	today := time.Now()
+	tenDaysLater := today.AddDate(0, 0, 10)
+	for _, req := range requirements {
+		switch req.Status {
+		case models.ReqStatusPending:
+			reqStats.PendingCount++
+		case models.ReqStatusApproved:
+			reqStats.ApprovedCount++
+		case models.ReqStatusReturned:
+			reqStats.ReturnedCount++
+		case models.ReqStatusRejected:
+			reqStats.RejectedCount++
+		case models.ReqStatusConverted:
+			reqStats.ConvertedCount++
+		case models.ReqStatusDraft:
+			reqStats.DraftCount++
+		}
+		reqStats.ByDepartment[req.Department]++
+		if req.CreatedAt != "" {
+			ct, err := time.Parse(time.RFC3339, req.CreatedAt)
+			if err == nil {
+				monthKey := ct.Format("2006-01")
+				reqStats.ByMonth[monthKey]++
+			}
+		}
+		if req.ExpectedOnboard != "" {
+			et, err := time.Parse("2006-01-02", req.ExpectedOnboard)
+			if err == nil {
+				if (et.Equal(today) || et.After(today)) && et.Before(tenDaysLater) {
+					reqStats.UrgentCount++
+				}
+			}
+		}
+	}
+	stats.RequirementStats = reqStats
+
 	return stats
 }
 
@@ -1061,4 +1706,354 @@ func UpdateOfferNote(id, note string) *models.Offer {
 		}
 	}
 	return nil
+}
+
+func ListRequirements(department, status, keyword string) []models.HiringRequirement {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	result := make([]models.HiringRequirement, 0)
+	for _, req := range requirements {
+		if department != "" && req.Department != department {
+			continue
+		}
+		if status != "" && string(req.Status) != status {
+			continue
+		}
+		if keyword != "" {
+			kw := strings.ToLower(keyword)
+			if !strings.Contains(strings.ToLower(req.JobTitle), kw) &&
+				!strings.Contains(strings.ToLower(req.Department), kw) &&
+				!strings.Contains(strings.ToLower(req.ReqNo), kw) &&
+				!strings.Contains(strings.ToLower(req.Initiator), kw) &&
+				!strings.Contains(strings.ToLower(req.JobDescription), kw) {
+				continue
+			}
+		}
+		result = append(result, req)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].UpdatedAt > result[j].UpdatedAt
+	})
+	return result
+}
+
+func GetRequirement(id string) *models.HiringRequirement {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	for i := range requirements {
+		if requirements[i].ID == id {
+			return &requirements[i]
+		}
+	}
+	return nil
+}
+
+func CreateRequirement(req *models.HiringRequirement) *models.HiringRequirement {
+	mu.Lock()
+	defer mu.Unlock()
+
+	now := time.Now()
+	yearMonth := now.Format("200601")
+	reqSeqNo++
+	req.ID = uuid.New().String()
+	req.ReqNo = fmt.Sprintf("REQ-%s-%04d", yearMonth, reqSeqNo)
+	req.Status = models.ReqStatusDraft
+	req.ApprovalNodes = []models.RequirementApprovalNode{}
+	req.OperationLogs = []models.RequirementOperationLog{
+		{
+			ID:        uuid.New().String(),
+			Action:    "创建",
+			Operator:  req.Initiator,
+			Detail:    "创建用人需求草稿",
+			CreatedAt: now.Format(time.RFC3339),
+		},
+	}
+	nowStr := now.Format(time.RFC3339)
+	req.CreatedAt = nowStr
+	req.UpdatedAt = nowStr
+
+	requirements = append(requirements, *req)
+	return &requirements[len(requirements)-1]
+}
+
+func UpdateRequirement(id string, req *models.HiringRequirement) *models.HiringRequirement {
+	mu.Lock()
+	defer mu.Unlock()
+
+	for i := range requirements {
+		if requirements[i].ID == id {
+			if requirements[i].Status != models.ReqStatusDraft && requirements[i].Status != models.ReqStatusReturned {
+				return nil
+			}
+			nowStr := time.Now().Format(time.RFC3339)
+			requirements[i].Department = req.Department
+			requirements[i].JobTitle = req.JobTitle
+			requirements[i].HeadcountType = req.HeadcountType
+			requirements[i].Headcount = req.Headcount
+			requirements[i].ExpectedOnboard = req.ExpectedOnboard
+			requirements[i].SalaryMin = req.SalaryMin
+			requirements[i].SalaryMax = req.SalaryMax
+			requirements[i].WorkLocation = req.WorkLocation
+			requirements[i].JobDescription = req.JobDescription
+			requirements[i].Requirements = req.Requirements
+			requirements[i].Reason = req.Reason
+			if req.Initiator != "" {
+				requirements[i].Initiator = req.Initiator
+			}
+			if req.InitiatorContact != "" {
+				requirements[i].InitiatorContact = req.InitiatorContact
+			}
+			requirements[i].UpdatedAt = nowStr
+			requirements[i].OperationLogs = append(requirements[i].OperationLogs, models.RequirementOperationLog{
+				ID:        uuid.New().String(),
+				Action:    "编辑",
+				Operator:  requirements[i].Initiator,
+				Detail:    "编辑用人需求内容",
+				CreatedAt: nowStr,
+			})
+			return &requirements[i]
+		}
+	}
+	return nil
+}
+
+func SubmitApproval(id string) *models.HiringRequirement {
+	mu.Lock()
+	defer mu.Unlock()
+
+	nowStr := time.Now().Format(time.RFC3339)
+	for i := range requirements {
+		if requirements[i].ID == id {
+			if requirements[i].Status != models.ReqStatusDraft && requirements[i].Status != models.ReqStatusReturned {
+				return nil
+			}
+			requirements[i].Status = models.ReqStatusPending
+			requirements[i].ApprovalNodes = []models.RequirementApprovalNode{
+				{
+					ID:        uuid.New().String(),
+					NodeName:  "部门总监审核",
+					Approver:  "部门总监",
+					Status:    models.ReqStatusPending,
+					CreatedAt: nowStr,
+				},
+				{
+					ID:        uuid.New().String(),
+					NodeName:  "招聘负责人审核",
+					Approver:  "招聘负责人",
+					Status:    models.ReqStatusPending,
+					CreatedAt: nowStr,
+				},
+			}
+			requirements[i].UpdatedAt = nowStr
+			requirements[i].LatestOpinion = ""
+			requirements[i].OperationLogs = append(requirements[i].OperationLogs, models.RequirementOperationLog{
+				ID:        uuid.New().String(),
+				Action:    "提交审批",
+				Operator:  requirements[i].Initiator,
+				Detail:    "提交部门总监和招聘负责人审批",
+				CreatedAt: nowStr,
+			})
+			return &requirements[i]
+		}
+	}
+	return nil
+}
+
+func ApproveRequirement(id string, nodeIndex int, action string, opinion string) *models.HiringRequirement {
+	mu.Lock()
+	defer mu.Unlock()
+
+	nowStr := time.Now().Format(time.RFC3339)
+	for i := range requirements {
+		if requirements[i].ID == id {
+			if requirements[i].Status != models.ReqStatusPending {
+				return nil
+			}
+			if nodeIndex < 0 || nodeIndex >= len(requirements[i].ApprovalNodes) {
+				return nil
+			}
+
+			node := &requirements[i].ApprovalNodes[nodeIndex]
+			if node.Status != models.ReqStatusPending {
+				return nil
+			}
+
+			node.Opinion = opinion
+			node.HandledAt = nowStr
+
+			switch action {
+			case "approve":
+				node.Status = models.ReqStatusApproved
+				isLast := nodeIndex == len(requirements[i].ApprovalNodes)-1
+				allApproved := true
+				for _, n := range requirements[i].ApprovalNodes {
+					if n.Status != models.ReqStatusApproved {
+						allApproved = false
+						break
+					}
+				}
+				if isLast && allApproved {
+					requirements[i].Status = models.ReqStatusApproved
+				}
+				requirements[i].LatestOpinion = opinion
+				logAction := "通过"
+				logDetail := node.NodeName + "审核通过"
+				if opinion != "" {
+					logDetail += "：" + opinion
+				}
+				requirements[i].OperationLogs = append(requirements[i].OperationLogs, models.RequirementOperationLog{
+					ID:        uuid.New().String(),
+					Action:    logAction,
+					Operator:  node.Approver,
+					Detail:    logDetail,
+					CreatedAt: nowStr,
+				})
+			case "return":
+				node.Status = models.ReqStatusReturned
+				requirements[i].Status = models.ReqStatusReturned
+				requirements[i].LatestOpinion = opinion
+				for j := nodeIndex + 1; j < len(requirements[i].ApprovalNodes); j++ {
+					requirements[i].ApprovalNodes[j].Status = models.ReqStatusDraft
+				}
+				logDetail := node.NodeName + "退回修改"
+				if opinion != "" {
+					logDetail += "：" + opinion
+				}
+				requirements[i].OperationLogs = append(requirements[i].OperationLogs, models.RequirementOperationLog{
+					ID:        uuid.New().String(),
+					Action:    "退回",
+					Operator:  node.Approver,
+					Detail:    logDetail,
+					CreatedAt: nowStr,
+				})
+			case "reject":
+				node.Status = models.ReqStatusRejected
+				requirements[i].Status = models.ReqStatusRejected
+				requirements[i].LatestOpinion = opinion
+				logDetail := node.NodeName + "审核拒绝"
+				if opinion != "" {
+					logDetail += "：" + opinion
+				}
+				requirements[i].OperationLogs = append(requirements[i].OperationLogs, models.RequirementOperationLog{
+					ID:        uuid.New().String(),
+					Action:    "拒绝",
+					Operator:  node.Approver,
+					Detail:    logDetail,
+					CreatedAt: nowStr,
+				})
+			default:
+				return nil
+			}
+
+			requirements[i].UpdatedAt = nowStr
+			return &requirements[i]
+		}
+	}
+	return nil
+}
+
+func ConvertToJob(id string) *models.Job {
+	mu.Lock()
+	defer mu.Unlock()
+
+	nowStr := time.Now().Format(time.RFC3339)
+	for i := range requirements {
+		if requirements[i].ID == id {
+			if requirements[i].Status != models.ReqStatusApproved {
+				return nil
+			}
+			if requirements[i].RelatedJobID != "" {
+				return nil
+			}
+
+			jobID := uuid.New().String()
+			publishedAt := time.Now().Format("2006-01-02")
+			newJob := models.Job{
+				ID:            jobID,
+				Title:         requirements[i].JobTitle,
+				Department:    requirements[i].Department,
+				Location:      requirements[i].WorkLocation,
+				SalaryMin:     requirements[i].SalaryMin,
+				SalaryMax:     requirements[i].SalaryMax,
+				Status:        models.JobStatusOpen,
+				Headcount:     requirements[i].Headcount,
+				Description:   requirements[i].JobDescription,
+				Requirements:  requirements[i].Requirements,
+				PublishedAt:   publishedAt,
+				RequirementId: id,
+			}
+			jobs = append(jobs, newJob)
+
+			requirements[i].RelatedJobID = jobID
+			requirements[i].Status = models.ReqStatusConverted
+			requirements[i].UpdatedAt = nowStr
+			requirements[i].OperationLogs = append(requirements[i].OperationLogs, models.RequirementOperationLog{
+				ID:        uuid.New().String(),
+				Action:    "转职位",
+				Operator:  "招聘专员-刘经理",
+				Detail:    "已生成招聘职位：" + newJob.Title,
+				CreatedAt: nowStr,
+			})
+
+			result := jobs[len(jobs)-1]
+			return &result
+		}
+	}
+	return nil
+}
+
+func GetRequirementStats() models.RequirementStats {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	stats := models.RequirementStats{
+		ByDepartment: make(map[string]int),
+		ByMonth:      make(map[string]int),
+	}
+
+	now := time.Now()
+	urgentThreshold := now.AddDate(0, 0, 14)
+
+	for _, req := range requirements {
+		switch req.Status {
+		case models.ReqStatusDraft:
+			stats.DraftCount++
+		case models.ReqStatusPending:
+			stats.PendingCount++
+		case models.ReqStatusApproved:
+			stats.ApprovedCount++
+		case models.ReqStatusReturned:
+			stats.ReturnedCount++
+		case models.ReqStatusRejected:
+			stats.RejectedCount++
+		case models.ReqStatusConverted:
+			stats.ConvertedCount++
+		}
+
+		stats.ByDepartment[req.Department]++
+
+		if req.CreatedAt != "" {
+			createdTime, err := time.Parse(time.RFC3339, req.CreatedAt)
+			if err == nil {
+				monthKey := createdTime.Format("2006-01")
+				stats.ByMonth[monthKey]++
+			}
+		}
+
+		if req.Status != models.ReqStatusRejected && req.Status != models.ReqStatusConverted {
+			if req.ExpectedOnboard != "" {
+				onboardTime, err := time.Parse("2006-01-02", req.ExpectedOnboard)
+				if err == nil {
+					if onboardTime.Before(urgentThreshold) || onboardTime.Equal(urgentThreshold) {
+						stats.UrgentCount++
+					}
+				}
+			}
+		}
+	}
+
+	return stats
 }

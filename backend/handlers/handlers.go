@@ -589,3 +589,252 @@ func UpdateOfferNote(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"data": updated})
 }
+
+type listRequirementsRequest struct {
+	Department string `form:"department"`
+	Status     string `form:"status"`
+	Keyword    string `form:"keyword"`
+}
+
+func ListRequirements(c *gin.Context) {
+	var req listRequirementsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	result := store.ListRequirements(req.Department, req.Status, req.Keyword)
+	c.JSON(http.StatusOK, gin.H{"data": result})
+}
+
+func GetRequirement(c *gin.Context) {
+	id := c.Param("id")
+	req := store.GetRequirement(id)
+	if req == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "用人需求不存在"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": req})
+}
+
+type createRequirementRequest struct {
+	Department       string               `json:"department" binding:"required"`
+	JobTitle         string               `json:"jobTitle" binding:"required"`
+	HeadcountType    models.HeadcountType `json:"headcountType" binding:"required"`
+	Headcount        int                  `json:"headcount" binding:"required,min=1"`
+	ExpectedOnboard  string               `json:"expectedOnboard" binding:"required"`
+	SalaryMin        int                  `json:"salaryMin" binding:"required,min=0"`
+	SalaryMax        int                  `json:"salaryMax" binding:"required,min=0"`
+	WorkLocation     string               `json:"workLocation" binding:"required"`
+	JobDescription   string               `json:"jobDescription" binding:"required"`
+	Requirements     string               `json:"requirements" binding:"required"`
+	Reason           string               `json:"reason"`
+	Initiator        string               `json:"initiator" binding:"required"`
+	InitiatorContact string               `json:"initiatorContact" binding:"required"`
+}
+
+func CreateRequirement(c *gin.Context) {
+	var req createRequirementRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.SalaryMin > req.SalaryMax {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "最低薪资不能大于最高薪资"})
+		return
+	}
+
+	hr := &models.HiringRequirement{
+		Department:       req.Department,
+		JobTitle:         req.JobTitle,
+		HeadcountType:    req.HeadcountType,
+		Headcount:        req.Headcount,
+		ExpectedOnboard:  req.ExpectedOnboard,
+		SalaryMin:        req.SalaryMin,
+		SalaryMax:        req.SalaryMax,
+		WorkLocation:     req.WorkLocation,
+		JobDescription:   req.JobDescription,
+		Requirements:     req.Requirements,
+		Reason:           req.Reason,
+		Initiator:        req.Initiator,
+		InitiatorContact: req.InitiatorContact,
+	}
+
+	created := store.CreateRequirement(hr)
+	c.JSON(http.StatusOK, gin.H{"data": created})
+}
+
+type updateRequirementRequest struct {
+	ID               string               `json:"id" binding:"required"`
+	Department       string               `json:"department" binding:"required"`
+	JobTitle         string               `json:"jobTitle" binding:"required"`
+	HeadcountType    models.HeadcountType `json:"headcountType" binding:"required"`
+	Headcount        int                  `json:"headcount" binding:"required,min=1"`
+	ExpectedOnboard  string               `json:"expectedOnboard" binding:"required"`
+	SalaryMin        int                  `json:"salaryMin" binding:"required,min=0"`
+	SalaryMax        int                  `json:"salaryMax" binding:"required,min=0"`
+	WorkLocation     string               `json:"workLocation" binding:"required"`
+	JobDescription   string               `json:"jobDescription" binding:"required"`
+	Requirements     string               `json:"requirements" binding:"required"`
+	Reason           string               `json:"reason"`
+	Initiator        string               `json:"initiator" binding:"required"`
+	InitiatorContact string               `json:"initiatorContact" binding:"required"`
+}
+
+func UpdateRequirement(c *gin.Context) {
+	id := c.Param("id")
+
+	var req updateRequirementRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if id != req.ID {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "路径ID与请求体ID不一致"})
+		return
+	}
+
+	if req.SalaryMin > req.SalaryMax {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "最低薪资不能大于最高薪资"})
+		return
+	}
+
+	existing := store.GetRequirement(id)
+	if existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "用人需求不存在"})
+		return
+	}
+
+	if existing.Status != models.ReqStatusDraft && existing.Status != models.ReqStatusReturned {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "仅草稿或退回状态的需求可以编辑"})
+		return
+	}
+
+	hr := &models.HiringRequirement{
+		Department:       req.Department,
+		JobTitle:         req.JobTitle,
+		HeadcountType:    req.HeadcountType,
+		Headcount:        req.Headcount,
+		ExpectedOnboard:  req.ExpectedOnboard,
+		SalaryMin:        req.SalaryMin,
+		SalaryMax:        req.SalaryMax,
+		WorkLocation:     req.WorkLocation,
+		JobDescription:   req.JobDescription,
+		Requirements:     req.Requirements,
+		Reason:           req.Reason,
+		Initiator:        req.Initiator,
+		InitiatorContact: req.InitiatorContact,
+	}
+
+	updated := store.UpdateRequirement(id, hr)
+	if updated == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "更新失败，仅草稿或退回状态的需求可以编辑"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": updated})
+}
+
+func SubmitApproval(c *gin.Context) {
+	id := c.Param("id")
+
+	existing := store.GetRequirement(id)
+	if existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "用人需求不存在"})
+		return
+	}
+
+	if existing.Status != models.ReqStatusDraft && existing.Status != models.ReqStatusReturned {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "仅草稿或退回状态的需求可以提交审批"})
+		return
+	}
+
+	updated := store.SubmitApproval(id)
+	if updated == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "提交审批失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": updated})
+}
+
+type approveRequirementRequest struct {
+	NodeIndex *int   `json:"nodeIndex" binding:"required"`
+	Action    string `json:"action" binding:"required"`
+	Opinion   string `json:"opinion"`
+}
+
+func ApproveRequirement(c *gin.Context) {
+	id := c.Param("id")
+
+	var req approveRequirementRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	nodeIndex := *req.NodeIndex
+
+	validActions := map[string]bool{
+		"approve": true,
+		"return":  true,
+		"reject":  true,
+	}
+	if !validActions[req.Action] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的审批操作，仅支持 approve/return/reject"})
+		return
+	}
+
+	existing := store.GetRequirement(id)
+	if existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "用人需求不存在"})
+		return
+	}
+
+	if existing.Status != models.ReqStatusPending {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "仅审批中状态的需求可以审批"})
+		return
+	}
+
+	if nodeIndex < 0 || nodeIndex >= len(existing.ApprovalNodes) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的审批节点索引"})
+		return
+	}
+
+	updated := store.ApproveRequirement(id, nodeIndex, req.Action, req.Opinion)
+	if updated == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "审批失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": updated})
+}
+
+func ConvertToJob(c *gin.Context) {
+	id := c.Param("id")
+
+	existing := store.GetRequirement(id)
+	if existing == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "用人需求不存在"})
+		return
+	}
+
+	if existing.Status != models.ReqStatusApproved {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "仅已通过审批的需求可以转换为职位"})
+		return
+	}
+
+	if existing.RelatedJobID != "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "该需求已转换为职位"})
+		return
+	}
+
+	job := store.ConvertToJob(id)
+	if job == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "转换为职位失败"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": job})
+}
+
+func GetRequirementStats(c *gin.Context) {
+	stats := store.GetRequirementStats()
+	c.JSON(http.StatusOK, gin.H{"data": stats})
+}

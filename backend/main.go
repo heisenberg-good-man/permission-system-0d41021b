@@ -57,6 +57,18 @@ func main() {
 			stats.GET("", handlers.GetStats)
 		}
 
+		requirements := api.Group("/requirements")
+		{
+			requirements.GET("", handlers.ListRequirements)
+			requirements.GET("/stats", handlers.GetRequirementStats)
+			requirements.GET("/:id", handlers.GetRequirement)
+			requirements.POST("", handlers.CreateRequirement)
+			requirements.PUT("/:id", handlers.UpdateRequirement)
+			requirements.PUT("/:id/submit-approval", handlers.SubmitApproval)
+			requirements.PUT("/:id/approve", handlers.ApproveRequirement)
+			requirements.POST("/:id/convert-to-job", handlers.ConvertToJob)
+		}
+
 		candidates := api.Group("/candidates")
 		{
 			candidates.GET("", handlers.ListCandidates)

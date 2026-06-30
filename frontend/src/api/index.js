@@ -119,3 +119,35 @@ export const withdrawOffer = (id, data) => {
 export const updateOfferNote = (id, data) => {
   return request.put(`/offers/${id}/note`, data)
 }
+
+export const listRequirements = (params) => {
+  return request.get('/requirements', { params })
+}
+
+export const getRequirement = (id) => {
+  return request.get(`/requirements/${id}`)
+}
+
+export const createRequirement = (data) => {
+  return request.post('/requirements', data)
+}
+
+export const updateRequirement = (id, data) => {
+  return request.put(`/requirements/${id}`, data)
+}
+
+export const submitApproval = (id) => {
+  return request.put(`/requirements/${id}/submit-approval`)
+}
+
+export const approveRequirement = (id, data) => {
+  return request.put(`/requirements/${id}/approve`, data)
+}
+
+export const convertToJob = (id, data) => {
+  return request.post(`/requirements/${id}/convert-to-job`, data)
+}
+
+export const getRequirementStats = () => {
+  return request.get('/requirements/stats')
+}

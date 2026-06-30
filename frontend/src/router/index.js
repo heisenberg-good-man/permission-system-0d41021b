@@ -26,6 +26,18 @@ const routes = [
         meta: { title: '职位管理', icon: 'Briefcase' }
       },
       {
+        path: 'requirements',
+        name: 'Requirements',
+        component: () => import('@/views/Requirements.vue'),
+        meta: { title: '用人需求', icon: 'DocumentAdd' }
+      },
+      {
+        path: 'requirements/detail',
+        name: 'RequirementDetail',
+        component: () => import('@/views/RequirementDetail.vue'),
+        meta: { title: '需求详情', icon: 'DocumentAdd', hidden: true }
+      },
+      {
         path: 'applications',
         name: 'Applications',
         component: () => import('@/views/Applications.vue'),
