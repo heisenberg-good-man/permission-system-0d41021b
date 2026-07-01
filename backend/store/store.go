@@ -1998,8 +1998,7 @@ func ConvertToJob(id string) *models.Job {
 				CreatedAt: nowStr,
 			})
 
-			result := jobs[len(jobs)-1]
-			return &result
+			return &jobs[len(jobs)-1]
 		}
 	}
 	return nil
